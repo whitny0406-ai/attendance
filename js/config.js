@@ -9,10 +9,10 @@ const CONFIG = {
 
   // 구글 스프레드시트 URL에서 확인 가능한 ID
   // 예: https://docs.google.com/spreadsheets/d/[SPREADSHEET_ID]/edit
-  SPREADSHEET_ID: 'YO1vBE-9w2ncKs7mHXMf2TRngxUu23BkWK-l9svT1GLxIwUR_SPREADSHEET_ID',
+  SPREADSHEET_ID: '1vBE-9w2ncKs7mHXMf2TRngxUu23BkWK-l9svT1GLxIw',
 
   // Google Apps Script 웹앱 배포 후 발급된 URL (쓰기 전용)
-  APPS_SCRIPT_URL: 'Yhttps://script.google.com/macros/s/AKfycbwfdcUE33EX23KNEOOKqPcPHKWHBSGTs5xT49CjvYc576p3rjEb4CtZ_S71al84YheZ/execOUR_APPS_SCRIPT_WEB_APP_URL',
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwfdcUE33EX23KNEOOKqPcPHKWHBSGTs5xT49CjvYc576p3rjEb4CtZ_S71al84YheZ/exec',
 
   // 시트 탭 이름 (구글 시트의 탭 이름과 동일해야 함)
   SHEETS: {
