@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>관리자 대시보드 — 출퇴근 관리</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- 헤더 -->
+<header class="header" id="siteHeader"></header>
+
+<!-- 로딩 -->
+<div id="globalLoader" role="status" aria-label="로딩 중">
+  <div class="spinner"></div>
+</div>
+
+<main class="main">
+  <div class="page-title">관리자 대시보드</div>
+  <div id="todayDateLabel" class="page-subtitle"></div>
+
+  <!-- 통계 카드 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">전체 재직자</div>
+      <div class="stat-value primary" id="statTotal">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">오늘 출근</div>
+      <div class="stat-value success" id="statPresent">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">미출근</div>
+      <div class="stat-value danger" id="statAbsent">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">미퇴근</div>
+      <div class="stat-value warning" id="statNotOut">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">대기 중 휴가 신청</div>
+      <div class="stat-value warning" id="statPendingLeave">-</div>
+    </div>
+  </div>
+
+  <!-- 빠른 링크 -->
+  <div class="quick-links">
+    <a href="attendance.html" class="quick-link-card">
+      <div class="quick-link-icon blue">⏰</div>
+      <div>
+        <div class="quick-link-text">출퇴근 관리</div>
+        <div class="quick-link-sub">직원 출퇴근 수동 입력·수정</div>
+      </div>
+    </a>
+    <a href="employee-list.html" class="quick-link-card">
+      <div class="quick-link-icon green">👥</div>
+      <div>
+        <div class="quick-link-text">직원 관리</div>
+        <div class="quick-link-sub">직원 등록·수정·퇴직 처리</div>
+      </div>
+    </a>
+    <a href="leave.html" class="quick-link-card">
+      <div class="quick-link-icon amber">🏖️</div>
+      <div>
+        <div class="quick-link-text">휴가 승인 <span class="nav-badge pending-leave-badge" style="display:none">0</span></div>
+        <div class="quick-link-sub">대기 중 신청 검토</div>
+      </div>
+    </a>
+    <a href="schedule.html" class="quick-link-card">
+      <div class="quick-link-icon blue">📅</div>
+      <div>
+        <div class="quick-link-text">스케줄 관리</div>
+        <div class="quick-link-sub">직원별 근무 시간 설정</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- 오늘 출퇴근 현황 -->
+  <div class="card section">
+    <div class="section-header">
+      <div class="card-title">오늘 출퇴근 현황</div>
+      <button class="btn btn-outline btn-sm" onclick="loadDashboard()">새로고침</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>소속</th>
+            <th>예정</th>
+            <th>출근</th>
+            <th>퇴근</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody id="dashboardTableBody">
+          <tr><td colspan="6" class="empty-row">데이터를 불러오는 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/gsheet-api.js"></script>
+<script src="js/gsheet-write.js"></script>
+<script src="js/leave.js"></script>
+<script>
+  async function loadDashboard() {
+    const user = requireAdmin();
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const today = getTodayStr();
+      const [employees, records, pending] = await Promise.all([
+        fetchActiveEmployees(),
+        fetchAttendanceByDate(today),
+        fetchPendingLeaves(),
+      ]);
+
+      const recordMap = {};
+      records.forEach(r => { recordMap[r['직원ID']] = r; });
+
+      let present = 0, notOut = 0;
+
+      const tbody = document.getElementById('dashboardTableBody');
+      if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-row">재직 직원이 없습니다.</td></tr>';
+      } else {
+        tbody.innerHTML = employees.map(emp => {
+          const rec = recordMap[emp['직원ID']];
+          let statusText = '미출근';
+          let statusClass = 'status-absent';
+
+          if (rec) {
+            if (rec['상태'] === '완료') {
+              statusText = '퇴근완료';
+              statusClass = 'status-done';
+              present++;
+            } else {
+              statusText = '미퇴근';
+              statusClass = 'status-warning';
+              present++;
+              notOut++;
+            }
+          }
+
+          const lateTag = rec && emp['예정출근시간'] && isLater(rec['출근시간'], emp['예정출근시간'])
+            ? '<span class="tag tag-warning">지각</span>' : '';
+
+          return `<tr>
+            <td class="font-bold">${emp['이름']}</td>
+            <td>${emp['소속'] || '-'}</td>
+            <td>${emp['예정출근시간'] || '-'}${emp['예정퇴근시간'] ? '~' + emp['예정퇴근시간'] : ''}</td>
+            <td>${rec ? rec['출근시간'] : '-'} ${lateTag}</td>
+            <td>${rec ? (rec['퇴근시간'] || '미기록') : '-'}</td>
+            <td><span class="status-badge ${statusClass} status-sm">${statusText}</span></td>
+          </tr>`;
+        }).join('');
+      }
+
+      // 통계 업데이트
+      document.getElementById('statTotal').textContent = employees.length;
+      document.getElementById('statPresent').textContent = present;
+      document.getElementById('statAbsent').textContent = employees.length - present;
+      document.getElementById('statNotOut').textContent = notOut;
+      document.getElementById('statPendingLeave').textContent = pending.length;
+
+      updatePendingBadge(pending.length);
+    } catch (err) {
+      showApiError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const user = requireAdmin();
+    if (!user) return;
+
+    renderHeader();
+    renderUserInfo();
+    renderNavLinks(user);
+
+    const dateLabel = document.getElementById('todayDateLabel');
+    const now = new Date();
+    dateLabel.textContent = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${['일','월','화','수','목','금','토'][now.getDay()]}요일)`;
+
+    loadDashboard();
+  });
+</script>
+</body>
+</html>

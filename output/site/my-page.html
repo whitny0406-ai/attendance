@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>내 정보 — 출퇴근 관리</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header class="header" id="siteHeader"></header>
+
+<div id="globalLoader" role="status" aria-label="로딩 중">
+  <div class="spinner"></div>
+</div>
+
+<main class="main">
+  <div class="page-title">내 정보</div>
+  <div class="page-subtitle">본인 정보 및 출퇴근 현황</div>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
+
+    <!-- 내 정보 카드 -->
+    <div class="card">
+      <div class="card-title">기본 정보</div>
+      <table style="width:100%; border:none;">
+        <tbody id="myInfoBody" style="border:none;">
+          <tr><td colspan="2" class="empty-row">불러오는 중...</td></tr>
+        </tbody>
+      </table>
+      <div class="mt-16">
+        <button class="btn btn-outline btn-sm" onclick="openPasswordModal()">비밀번호 변경</button>
+      </div>
+    </div>
+
+    <!-- 이번 달 요약 -->
+    <div class="card">
+      <div class="card-title">이번 달 출퇴근 요약</div>
+      <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
+        <div class="stat-card" style="padding:16px;">
+          <div class="stat-label">출근일</div>
+          <div class="stat-value success" id="myMonthPresent">-</div>
+        </div>
+        <div class="stat-card" style="padding:16px;">
+          <div class="stat-label">지각</div>
+          <div class="stat-value warning" id="myMonthLate">-</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>출근</th>
+              <th>퇴근</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody id="myMonthBody">
+            <tr><td colspan="4" class="empty-row">데이터를 불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 최근 출퇴근 이력 (전체) -->
+  <div class="card section mt-24">
+    <div class="card-title">전체 출퇴근 이력</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>날짜</th>
+            <th>출근</th>
+            <th>퇴근</th>
+            <th>상태</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody">
+          <tr><td colspan="5" class="empty-row">데이터를 불러오는 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- 비밀번호 변경 모달 -->
+<div class="modal-overlay" id="passwordModal" role="dialog" aria-modal="true" aria-labelledby="pwModalTitle">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-header">
+      <div class="modal-title" id="pwModalTitle">비밀번호 변경</div>
+      <button class="modal-close" onclick="closePasswordModal()" aria-label="닫기">✕</button>
+    </div>
+    <form id="passwordForm" onsubmit="submitPassword(event)">
+      <div class="form-group">
+        <label class="form-label" for="newPw">새 비밀번호</label>
+        <input class="form-control" id="newPw" type="password" placeholder="새 비밀번호" required minlength="6" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="newPwConfirm">비밀번호 확인</label>
+        <input class="form-control" id="newPwConfirm" type="password" placeholder="비밀번호 재입력" required />
+      </div>
+      <div id="pwError" class="form-error"></div>
+      <div class="flex gap-12 mt-16">
+        <button type="button" class="btn btn-outline w-full" onclick="closePasswordModal()">취소</button>
+        <button type="submit" class="btn btn-primary w-full">변경</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/gsheet-api.js"></script>
+<script src="js/gsheet-write.js"></script>
+<script src="js/attendance.js"></script>
+<script>
+  async function loadMyPage() {
+    const user = requireAuth();
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      // 내 정보 표시
+      const emp = await fetchEmployeeById(user.employeeId);
+      const infoBody = document.getElementById('myInfoBody');
+      if (emp) {
+        const rows = [
+          ['이름', emp['이름']],
+          ['직원 ID', emp['직원ID']],
+          ['소속', emp['소속'] || '-'],
+          ['직종', emp['직종'] || '-'],
+          ['연락처', emp['연락처'] || '-'],
+          ['예정 근무', emp['예정출근시간'] && emp['예정퇴근시간']
+            ? `${emp['예정출근시간']} ~ ${emp['예정퇴근시간']}` : '미설정'],
+          ['권한', emp['권한(관리자/직원)']],
+          ['등록일', emp['등록일'] || '-'],
+        ];
+        infoBody.innerHTML = rows.map(([label, value]) => `
+          <tr>
+            <td style="font-weight:600; color:var(--neutral-600); padding:10px 0; border-bottom:1px solid var(--neutral-100); width:40%">${label}</td>
+            <td style="padding:10px 0; border-bottom:1px solid var(--neutral-100)">${value}</td>
+          </tr>
+        `).join('');
+      }
+
+      // 이번 달 요약
+      const now = new Date();
+      const yearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const monthRecords = (await fetchAttendanceByMonth(yearMonth))
+        .filter(r => r['직원ID'] === user.employeeId)
+        .sort((a,b) => b['날짜'] > a['날짜'] ? 1 : -1);
+
+      let lateCount = 0;
+      if (emp) {
+        monthRecords.forEach(r => {
+          if (emp['예정출근시간'] && isLater(r['출근시간'], emp['예정출근시간'])) lateCount++;
+        });
+      }
+
+      document.getElementById('myMonthPresent').textContent = monthRecords.length;
+      document.getElementById('myMonthLate').textContent = lateCount;
+
+      const monthBody = document.getElementById('myMonthBody');
+      if (monthRecords.length === 0) {
+        monthBody.innerHTML = '<tr><td colspan="4" class="empty-row">이번 달 기록이 없습니다.</td></tr>';
+      } else {
+        monthBody.innerHTML = monthRecords.map(r => {
+          const lateTag = emp && emp['예정출근시간'] && isLater(r['출근시간'], emp['예정출근시간'])
+            ? '<span class="tag tag-warning">지각</span>' : '';
+          const statusClass = r['상태'] === '완료' ? 'status-done' : 'status-warning';
+          return `<tr>
+            <td>${formatDate(r['날짜'])}</td>
+            <td>${r['출근시간'] || '-'} ${lateTag}</td>
+            <td>${r['퇴근시간'] || '-'}</td>
+            <td><span class="status-badge ${statusClass} status-sm">${r['상태'] || '-'}</span></td>
+          </tr>`;
+        }).join('');
+      }
+
+      // 전체 이력
+      await renderRecentHistory(user.employeeId);
+
+    } catch (err) {
+      showApiError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openPasswordModal() {
+    document.getElementById('passwordForm').reset();
+    document.getElementById('pwError').textContent = '';
+    document.getElementById('passwordModal').style.display = 'flex';
+  }
+
+  function closePasswordModal() {
+    document.getElementById('passwordModal').style.display = 'none';
+  }
+
+  async function submitPassword(e) {
+    e.preventDefault();
+    const pwError = document.getElementById('pwError');
+    pwError.textContent = '';
+    const newPw = document.getElementById('newPw').value;
+    const confirm = document.getElementById('newPwConfirm').value;
+
+    if (newPw !== confirm) { pwError.textContent = '비밀번호가 일치하지 않습니다.'; return; }
+    if (newPw.length < 6) { pwError.textContent = '비밀번호는 6자 이상이어야 합니다.'; return; }
+
+    const submitBtn = e.target.querySelector('[type="submit"]');
+    submitBtn.disabled = true;
+
+    try {
+      const user = getUser();
+      const hash = await sha256(newPw);
+      await changePassword(user.employeeId, hash);
+      showToast('비밀번호가 변경되었습니다.');
+      closePasswordModal();
+    } catch (err) {
+      pwError.textContent = err.message;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const user = requireAuth();
+    if (!user) return;
+    renderHeader();
+    renderNavLinks(user);
+    renderUserInfo();
+    loadMyPage();
+  });
+</script>
+</body>
+</html>
