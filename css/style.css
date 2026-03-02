@@ -942,6 +942,7 @@ textarea.form-control { min-height: 100px; resize: vertical; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .form-grid  { grid-template-columns: 1fr; }
   .today-status { grid-template-columns: 1fr; }
+  .two-col-grid { grid-template-columns: 1fr !important; }
 }
 
 @media (max-width: 480px) {

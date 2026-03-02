@@ -24,7 +24,7 @@
         <p>연차·병가·경조·기타 휴가를 신청하세요.</p>
       </div>
 
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
+      <div class="two-col-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
 
         <!-- 신청 폼 -->
         <div class="card">
@@ -67,12 +67,14 @@
                 <tr>
                   <th>유형</th>
                   <th>기간</th>
+                  <th>사유</th>
                   <th>신청일</th>
                   <th>상태</th>
+                  <th>처리일</th>
                 </tr>
               </thead>
               <tbody id="myLeaveBody">
-                <tr><td colspan="4" class="empty-row">데이터를 불러오는 중...</td></tr>
+                <tr><td colspan="6" class="empty-row">데이터를 불러오는 중...</td></tr>
               </tbody>
             </table>
           </div>
