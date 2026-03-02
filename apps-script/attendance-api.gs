@@ -27,8 +27,41 @@ function setCorsHeaders(output) {
     .setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-// ── OPTIONS preflight 처리 ──
+// ── GET 요청 처리 (쓰기 액션 + preflight) ──
 function doGet(e) {
+  // 쓰기 액션이 URL 파라미터로 전달된 경우 처리
+  if (e && e.parameter && e.parameter.action) {
+    const output = ContentService.createTextOutput();
+    output.setMimeType(ContentService.MimeType.JSON);
+
+    try {
+      const action = e.parameter.action;
+      const payload = e.parameter.payload ? JSON.parse(e.parameter.payload) : {};
+      let result;
+
+      switch (action) {
+        case 'clockIn':          result = handleClockIn(payload);          break;
+        case 'clockOut':         result = handleClockOut(payload);         break;
+        case 'addAttendance':    result = handleAddAttendance(payload);    break;
+        case 'updateAttendance': result = handleUpdateAttendance(payload); break;
+        case 'addEmployee':      result = handleAddEmployee(payload);      break;
+        case 'updateEmployee':   result = handleUpdateEmployee(payload);   break;
+        case 'submitLeave':      result = handleSubmitLeave(payload);      break;
+        case 'processLeave':     result = handleProcessLeave(payload);     break;
+        case 'backup':           result = handleBackup();                  break;
+        default:
+          throw new Error(`알 수 없는 액션: ${action}`);
+      }
+
+      output.setContent(JSON.stringify({ status: 'ok', data: result }));
+    } catch (err) {
+      output.setContent(JSON.stringify({ status: 'error', message: err.message }));
+    }
+
+    return setCorsHeaders(output);
+  }
+
+  // 기본 GET (연결 확인용)
   return setCorsHeaders(ContentService.createTextOutput('ok'));
 }
 
