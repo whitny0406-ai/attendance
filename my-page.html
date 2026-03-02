@@ -3,50 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>내 정보 — 출퇴근 관리</title>
+  <title>내 정보 — bkl HR</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-
-<header class="header" id="siteHeader"></header>
 
 <div id="globalLoader" role="status" aria-label="로딩 중">
   <div class="spinner"></div>
 </div>
 
-<main class="main">
-  <div class="page-title">내 정보</div>
-  <div class="page-subtitle">본인 정보 및 출퇴근 현황</div>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
 
-  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
-
-    <!-- 내 정보 카드 -->
-    <div class="card">
-      <div class="card-title">기본 정보</div>
-      <table style="width:100%; border:none;">
-        <tbody id="myInfoBody" style="border:none;">
-          <tr><td colspan="2" class="empty-row">불러오는 중...</td></tr>
-        </tbody>
-      </table>
-      <div class="mt-16">
-        <button class="btn btn-outline btn-sm" onclick="openPasswordModal()">비밀번호 변경</button>
-      </div>
+  <main class="main-content">
+    <div class="page-header">
+      <h2>내 정보</h2>
+      <p>본인 정보 및 출퇴근 현황</p>
     </div>
 
-    <!-- 이번 달 요약 -->
-    <div class="card">
-      <div class="card-title">이번 달 출퇴근 요약</div>
-      <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
-        <div class="stat-card" style="padding:16px;">
-          <div class="stat-label">출근일</div>
-          <div class="stat-value success" id="myMonthPresent">-</div>
-        </div>
-        <div class="stat-card" style="padding:16px;">
-          <div class="stat-label">지각</div>
-          <div class="stat-value warning" id="myMonthLate">-</div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
+
+      <!-- 내 정보 카드 -->
+      <div class="card">
+        <div class="card-title">기본 정보</div>
+        <table style="width:100%; border:none;">
+          <tbody id="myInfoBody" style="border:none;">
+            <tr><td colspan="2" class="empty-row">불러오는 중...</td></tr>
+          </tbody>
+        </table>
+        <div class="mt-16">
+          <button class="btn btn-outline btn-sm" onclick="openPasswordModal()">비밀번호 변경</button>
         </div>
       </div>
-      <div class="table-wrap">
+
+      <!-- 이번 달 요약 -->
+      <div class="card">
+        <div class="card-title">이번 달 출퇴근 요약</div>
+        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
+          <div class="stat-card" style="padding:16px;">
+            <div class="stat-label">출근일</div>
+            <div class="stat-value" id="myMonthPresent">-</div>
+          </div>
+          <div class="stat-card" style="padding:16px;">
+            <div class="stat-label">지각</div>
+            <div class="stat-value" id="myMonthLate">-</div>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>출근</th>
+                <th>퇴근</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody id="myMonthBody">
+              <tr><td colspan="4" class="empty-row">데이터를 불러오는 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 전체 출퇴근 이력 -->
+    <div class="card mt-24">
+      <div class="card-title">전체 출퇴근 이력</div>
+      <div class="table-wrapper">
         <table>
           <thead>
             <tr>
@@ -54,39 +79,18 @@
               <th>출근</th>
               <th>퇴근</th>
               <th>상태</th>
+              <th>비고</th>
             </tr>
           </thead>
-          <tbody id="myMonthBody">
-            <tr><td colspan="4" class="empty-row">데이터를 불러오는 중...</td></tr>
+          <tbody id="historyTableBody">
+            <tr><td colspan="5" class="empty-row">데이터를 불러오는 중...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-  </div>
-
-  <!-- 최근 출퇴근 이력 (전체) -->
-  <div class="card section mt-24">
-    <div class="card-title">전체 출퇴근 이력</div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>날짜</th>
-            <th>출근</th>
-            <th>퇴근</th>
-            <th>상태</th>
-            <th>비고</th>
-          </tr>
-        </thead>
-        <tbody id="historyTableBody">
-          <tr><td colspan="5" class="empty-row">데이터를 불러오는 중...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-</main>
+  </main>
+</div>
 
 <!-- 비밀번호 변경 모달 -->
 <div class="modal-overlay" id="passwordModal" role="dialog" aria-modal="true" aria-labelledby="pwModalTitle">
@@ -105,9 +109,9 @@
         <input class="form-control" id="newPwConfirm" type="password" placeholder="비밀번호 재입력" required />
       </div>
       <div id="pwError" class="form-error"></div>
-      <div class="flex gap-12 mt-16">
-        <button type="button" class="btn btn-outline w-full" onclick="closePasswordModal()">취소</button>
-        <button type="submit" class="btn btn-primary w-full">변경</button>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closePasswordModal()">취소</button>
+        <button type="submit" class="btn btn-primary">변경</button>
       </div>
     </form>
   </div>
@@ -142,8 +146,8 @@
         ];
         infoBody.innerHTML = rows.map(([label, value]) => `
           <tr>
-            <td style="font-weight:600; color:var(--neutral-600); padding:10px 0; border-bottom:1px solid var(--neutral-100); width:40%">${label}</td>
-            <td style="padding:10px 0; border-bottom:1px solid var(--neutral-100)">${value}</td>
+            <td style="font-weight:600; color:var(--gray-600); padding:10px 0; border-bottom:1px solid var(--gray-100); width:40%">${label}</td>
+            <td style="padding:10px 0; border-bottom:1px solid var(--gray-100)">${value}</td>
           </tr>
         `).join('');
       }
@@ -172,12 +176,12 @@
         monthBody.innerHTML = monthRecords.map(r => {
           const lateTag = emp && emp['예정출근시간'] && isLater(r['출근시간'], emp['예정출근시간'])
             ? '<span class="tag tag-warning">지각</span>' : '';
-          const statusClass = r['상태'] === '완료' ? 'status-done' : 'status-warning';
+          const statusClass = r['상태'] === '완료' ? 'badge-success' : 'badge-warning';
           return `<tr>
             <td>${formatDate(r['날짜'])}</td>
             <td>${r['출근시간'] || '-'} ${lateTag}</td>
             <td>${r['퇴근시간'] || '-'}</td>
-            <td><span class="status-badge ${statusClass} status-sm">${r['상태'] || '-'}</span></td>
+            <td><span class="badge ${statusClass} status-sm">${r['상태'] || '-'}</span></td>
           </tr>`;
         }).join('');
       }
@@ -231,9 +235,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     const user = requireAuth();
     if (!user) return;
-    renderHeader();
-    renderNavLinks(user);
-    renderUserInfo();
+    renderSidebar(user);
     loadMyPage();
   });
 </script>

@@ -93,17 +93,21 @@ function requireAdmin() {
 
 /** 토스트 알림 표시 */
 function showToast(message, type = 'success') {
-  const existing = document.querySelector('.toast');
-  if (existing) existing.remove();
+  let container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
 
   const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
+  toast.className = `toast ${type === 'error' ? 'error' : 'success'}`;
   toast.textContent = message;
-  document.body.appendChild(toast);
+  container.appendChild(toast);
 
-  setTimeout(() => toast.classList.add('toast-show'), 10);
   setTimeout(() => {
-    toast.classList.remove('toast-show');
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(20px)';
     setTimeout(() => toast.remove(), 300);
   }, 3000);
 }
@@ -112,12 +116,12 @@ function showToast(message, type = 'success') {
 function confirmDialog(message, confirmText = '확인', cancelText = '취소') {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
-    overlay.className = 'dialog-overlay';
+    overlay.className = 'confirm-overlay';
 
     overlay.innerHTML = `
-      <div class="dialog-box">
-        <p class="dialog-message">${message}</p>
-        <div class="dialog-actions">
+      <div class="confirm-box">
+        <p>${message}</p>
+        <div class="confirm-actions">
           <button class="btn btn-outline" id="dialogCancel">${cancelText}</button>
           <button class="btn btn-primary" id="dialogConfirm">${confirmText}</button>
         </div>
@@ -125,7 +129,6 @@ function confirmDialog(message, confirmText = '확인', cancelText = '취소') {
     `;
 
     document.body.appendChild(overlay);
-    setTimeout(() => overlay.classList.add('dialog-show'), 10);
 
     overlay.querySelector('#dialogConfirm').addEventListener('click', () => {
       overlay.remove();
@@ -162,74 +165,85 @@ function logout() {
   window.location.href = 'index.html';
 }
 
-/** 역할에 따라 네비게이션 링크 렌더링 */
-function renderNavLinks(user) {
-  const navEl = document.getElementById('navLinks');
-  const mobileNavEl = document.getElementById('mobileNavLinks');
-  if (!navEl) return;
-
+/** 사이드바 렌더링 */
+function renderSidebar(user) {
   const currentPage = location.pathname.split('/').pop() || 'index.html';
 
   const adminLinks = [
-    { href: 'admin-dashboard.html', label: '대시보드', icon: '📊' },
-    { href: 'attendance.html',      label: '출퇴근 기록',  icon: '⏰' },
-    { href: 'employee-list.html',   label: '직원 관리',  icon: '👥' },
-    { href: 'schedule.html',        label: '스케줄',     icon: '📅' },
-    { href: 'leave.html',           label: '휴가 관리',  icon: '🏖️', badge: true },
+    { href: 'admin-dashboard.html', label: '대시보드',   icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>' },
+    { href: 'attendance.html',      label: '출퇴근 기록', icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' },
+    { href: 'employee-list.html',   label: '직원 관리',   icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
+    { href: 'schedule.html',        label: '스케줄 관리', icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>' },
+    { href: 'leave.html',           label: '휴가 관리',   icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>', badge: true },
   ];
 
   const employeeLinks = [
-    { href: 'my-page.html',    label: '내 정보',    icon: '👤' },
-    { href: 'attendance.html', label: '출퇴근',     icon: '⏰' },
-    { href: 'leave.html',      label: '휴가 신청',  icon: '🏖️' },
+    { href: 'my-page.html',    label: '내 정보',   icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
+    { href: 'attendance.html', label: '출퇴근',    icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' },
+    { href: 'leave.html',      label: '휴가 신청', icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>' },
   ];
 
   const links = user.role === '관리자' ? adminLinks : employeeLinks;
+  const isAdmin = user.role === '관리자';
 
-  const renderLinks = (target) => {
-    target.innerHTML = links.map(l => `
-      <a href="${l.href}" class="nav-link${currentPage === l.href ? ' active' : ''}" aria-current="${currentPage === l.href ? 'page' : 'false'}">
-        <span aria-hidden="true">${l.icon}</span>
-        ${l.label}
-        ${l.badge ? '<span class="nav-badge pending-leave-badge" style="display:none">0</span>' : ''}
-      </a>
-    `).join('');
-  };
+  const sidebarHTML = `
+    <div class="sidebar-logo">
+      <h1>bkl <span>HR</span></h1>
+      <div class="role-badge">${isAdmin ? '관리자' : '직원'}</div>
+    </div>
+    <nav>
+      <div class="nav-section">
+        <div class="nav-section-title">메뉴</div>
+        ${links.map(l => `
+          <a href="${l.href}" class="nav-item${currentPage === l.href ? ' active' : ''}">
+            ${l.icon}
+            ${l.label}
+            ${l.badge ? '<span class="nav-badge pending-leave-badge">0</span>' : ''}
+          </a>
+        `).join('')}
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">${user.name ? user.name[0] : '?'}</div>
+        <div>
+          <div class="user-name">${user.name}</div>
+          <div class="user-role-text">${isAdmin ? 'Administrator' : 'Artist'}</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">로그아웃</button>
+    </div>
+  `;
 
-  renderLinks(navEl);
-  if (mobileNavEl) renderLinks(mobileNavEl);
+  let sidebar = document.getElementById('sidebar');
+  if (!sidebar) {
+    sidebar = document.createElement('aside');
+    sidebar.className = 'sidebar';
+    sidebar.id = 'sidebar';
+    document.body.insertBefore(sidebar, document.body.firstChild);
+  }
+  sidebar.innerHTML = sidebarHTML;
 
-  // 모바일 메뉴 토글
-  const hamburger = document.getElementById('hamburgerBtn');
-  if (hamburger && mobileNavEl) {
-    hamburger.addEventListener('click', () => {
-      mobileNavEl.classList.toggle('open');
-      hamburger.setAttribute('aria-expanded', mobileNavEl.classList.contains('open'));
-    });
+  // 모바일 토글 버튼
+  let toggle = document.getElementById('mobileToggle');
+  if (!toggle) {
+    toggle = document.createElement('button');
+    toggle.className = 'mobile-toggle';
+    toggle.id = 'mobileToggle';
+    toggle.setAttribute('aria-label', '메뉴 열기');
+    toggle.innerHTML = '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h14M3 10h14M3 14h14"/></svg>';
+    toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+    document.body.insertBefore(toggle, document.body.firstChild);
   }
 }
 
-/** 페이지 공통 헤더 HTML 삽입 */
-function renderHeader() {
-  const headerEl = document.getElementById('siteHeader');
-  if (!headerEl) return;
-
-  headerEl.innerHTML = `
-    <div class="header-inner">
-      <a class="logo" href="#" aria-label="홈">
-        <div class="logo-icon" aria-hidden="true">🎨</div>
-        <span>출퇴근 관리</span>
-      </a>
-      <nav class="nav" id="navLinks" aria-label="주 메뉴"></nav>
-      <div class="header-user">
-        <span class="user-name" id="userNameDisplay"></span>
-        <button class="btn btn-ghost btn-sm" onclick="logout()">로그아웃</button>
-        <button class="hamburger" id="hamburgerBtn" aria-label="메뉴 열기" aria-expanded="false">☰</button>
-      </div>
-    </div>
-    <nav class="mobile-nav" id="mobileNavLinks" aria-label="모바일 메뉴"></nav>
-  `;
+/** renderNavLinks는 renderSidebar로 대체 (하위 호환) */
+function renderNavLinks(user) {
+  renderSidebar(user);
 }
+
+/** renderHeader는 사이드바 레이아웃에서 사용 안 함 (하위 호환) */
+function renderHeader() {}
 
 /** 탭 전환 초기화 */
 function initTabs(defaultTab) {

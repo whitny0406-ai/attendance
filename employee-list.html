@@ -3,58 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>직원 관리 — 출퇴근 관리</title>
+  <title>직원 관리 — bkl HR</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-
-<header class="header" id="siteHeader"></header>
 
 <div id="globalLoader" role="status" aria-label="로딩 중">
   <div class="spinner"></div>
 </div>
 
-<main class="main">
-  <div class="page-title">직원 관리</div>
-  <div class="page-subtitle">직원 등록·수정·퇴직 처리</div>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
 
-  <div class="card section">
-    <div class="section-header">
-      <div class="flex gap-12 flex" style="align-items:center; flex-wrap:wrap; gap:12px;">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input class="form-control" id="searchInput" type="text" placeholder="이름 또는 소속 검색" oninput="filterTable()" />
+  <main class="main-content">
+    <div class="page-header">
+      <h2>직원 관리</h2>
+      <p>직원 등록·수정·퇴직 처리</p>
+    </div>
+
+    <div class="card">
+      <div class="section-header">
+        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:12px;">
+          <input class="form-control" id="searchInput" type="text"
+            placeholder="이름 또는 소속 검색" oninput="filterTable()"
+            style="max-width:240px;" />
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--gray-600);">
+            <input type="checkbox" id="showRetired" onchange="filterTable()" />
+            퇴직자 포함
+          </label>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--neutral-600);">
-          <input type="checkbox" id="showRetired" onchange="filterTable()" />
-          퇴직자 포함
-        </label>
+        <button class="btn btn-primary btn-sm" onclick="openEmployeeModal()">+ 직원 등록</button>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="openEmployeeModal()">+ 직원 등록</button>
-    </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>직원ID</th>
-            <th>이름</th>
-            <th>소속</th>
-            <th>직종</th>
-            <th>연락처</th>
-            <th>예정 근무</th>
-            <th>권한</th>
-            <th>상태</th>
-            <th>관리</th>
-          </tr>
-        </thead>
-        <tbody id="employeeTableBody">
-          <tr><td colspan="9" class="empty-row">데이터를 불러오는 중...</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>직원ID</th>
+              <th>이름</th>
+              <th>소속</th>
+              <th>직종</th>
+              <th>연락처</th>
+              <th>예정 근무</th>
+              <th>권한</th>
+              <th>상태</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody id="employeeTableBody">
+            <tr><td colspan="9" class="empty-row">데이터를 불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-</main>
+  </main>
+</div>
 
 <!-- 직원 등록/수정 모달 -->
 <div class="modal-overlay" id="employeeModal" role="dialog" aria-modal="true" aria-labelledby="employeeModalTitle">
@@ -103,9 +106,9 @@
         </div>
       </div>
       <div id="empFormError" class="form-error"></div>
-      <div class="flex gap-12 mt-16">
-        <button type="button" class="btn btn-outline w-full" onclick="closeEmployeeModal()">취소</button>
-        <button type="submit" class="btn btn-primary w-full" id="empSubmitBtn">등록</button>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeEmployeeModal()">취소</button>
+        <button type="submit" class="btn btn-primary" id="empSubmitBtn">등록</button>
       </div>
     </form>
   </div>
@@ -154,18 +157,18 @@
 
     tbody.innerHTML = employees.map(e => {
       const isRetired = e['상태'] === '퇴직';
-      const statusClass = isRetired ? 'status-absent' : 'status-done';
+      const statusClass = isRetired ? 'badge-danger' : 'badge-success';
       return `<tr style="${isRetired ? 'opacity:0.6' : ''}">
         <td class="text-sm text-muted">${e['직원ID']}</td>
         <td class="font-bold">${e['이름']}</td>
         <td>${e['소속'] || '-'}</td>
         <td>${e['직종'] || '-'}</td>
         <td>${e['연락처'] || '-'}</td>
-        <td>${e['예정출근시간'] || '-'} ${e['예정퇴근시간'] ? '~' + e['예정퇴근시간'] : ''}</td>
+        <td>${e['예정출근시간'] || '-'} ${e['예정퇴근시간'] ? '~ ' + e['예정퇴근시간'] : ''}</td>
         <td><span class="tag tag-primary">${e['권한(관리자/직원)'] || '직원'}</span></td>
-        <td><span class="status-badge ${statusClass} status-sm">${e['상태'] || '재직'}</span></td>
+        <td><span class="badge ${statusClass}">${e['상태'] || '재직'}</span></td>
         <td>
-          <div class="flex gap-8">
+          <div style="display:flex; gap:8px;">
             <button class="btn btn-sm btn-outline" onclick='openEditModal(${JSON.stringify(e)})'>수정</button>
             ${!isRetired ? `<button class="btn btn-sm btn-danger" onclick="handleRetire('${e['직원ID']}', '${e['이름']}')">퇴직</button>` : ''}
           </div>
@@ -200,7 +203,7 @@
     document.getElementById('empScheduleIn').value = emp['예정출근시간'] || '';
     document.getElementById('empScheduleOut').value = emp['예정퇴근시간'] || '';
     document.getElementById('empFormError').textContent = '';
-    document.getElementById('passwordGroup').style.display = 'none'; // 수정 시 비밀번호 변경 불필요
+    document.getElementById('passwordGroup').style.display = 'none';
     document.getElementById('employeeModal').style.display = 'flex';
   }
 
@@ -268,9 +271,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     const user = requireAdmin();
     if (!user) return;
-    renderHeader();
-    renderUserInfo();
-    renderNavLinks(user);
+    renderSidebar(user);
     loadEmployees();
   });
 </script>

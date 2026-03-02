@@ -3,144 +3,150 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>휴가 관리 — 출퇴근 관리</title>
+  <title>휴가 관리 — bkl HR</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-
-<header class="header" id="siteHeader"></header>
 
 <div id="globalLoader" role="status" aria-label="로딩 중">
   <div class="spinner"></div>
 </div>
 
-<main class="main">
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
 
-  <!-- ── 직원 뷰: 휴가 신청 ── -->
-  <div id="employeeLeaveView">
-    <div class="page-title">휴가 신청</div>
-    <div class="page-subtitle">연차·병가·경조·기타 휴가를 신청하세요.</div>
+  <main class="main-content">
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
+    <!-- ── 직원 뷰: 휴가 신청 ── -->
+    <div id="employeeLeaveView">
+      <div class="page-header">
+        <h2>휴가 신청</h2>
+        <p>연차·병가·경조·기타 휴가를 신청하세요.</p>
+      </div>
 
-      <!-- 신청 폼 -->
-      <div class="card">
-        <div class="card-title">휴가 신청서</div>
-        <form id="leaveForm">
-          <div class="form-group">
-            <label class="form-label" for="leaveType">휴가 유형 <span style="color:var(--danger)">*</span></label>
-            <select class="form-control" id="leaveType" required>
-              <option value="">선택하세요</option>
-              <option value="연차">연차</option>
-              <option value="병가">병가</option>
-              <option value="경조">경조</option>
-              <option value="기타">기타</option>
-            </select>
-          </div>
-          <div class="form-grid">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; align-items:start;">
+
+        <!-- 신청 폼 -->
+        <div class="card">
+          <div class="card-title">휴가 신청서</div>
+          <form id="leaveForm">
             <div class="form-group">
-              <label class="form-label" for="leaveStartDate">시작일 <span style="color:var(--danger)">*</span></label>
-              <input class="form-control" id="leaveStartDate" type="date" required />
+              <label class="form-label" for="leaveType">휴가 유형 <span style="color:var(--danger)">*</span></label>
+              <select class="form-control" id="leaveType" required>
+                <option value="">선택하세요</option>
+                <option value="연차">연차</option>
+                <option value="병가">병가</option>
+                <option value="경조">경조</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="leaveStartDate">시작일 <span style="color:var(--danger)">*</span></label>
+                <input class="form-control" id="leaveStartDate" type="date" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="leaveEndDate">종료일 <span style="color:var(--danger)">*</span></label>
+                <input class="form-control" id="leaveEndDate" type="date" required />
+              </div>
             </div>
             <div class="form-group">
-              <label class="form-label" for="leaveEndDate">종료일 <span style="color:var(--danger)">*</span></label>
-              <input class="form-control" id="leaveEndDate" type="date" required />
+              <label class="form-label" for="leaveReason">사유</label>
+              <textarea class="form-control" id="leaveReason" placeholder="사유를 입력하세요 (선택)"></textarea>
             </div>
+            <button class="btn btn-primary w-full" type="submit">신청</button>
+          </form>
+        </div>
+
+        <!-- 내 신청 이력 -->
+        <div class="card">
+          <div class="card-title">내 휴가 신청 이력</div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>유형</th>
+                  <th>기간</th>
+                  <th>신청일</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody id="myLeaveBody">
+                <tr><td colspan="4" class="empty-row">데이터를 불러오는 중...</td></tr>
+              </tbody>
+            </table>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="leaveReason">사유</label>
-            <textarea class="form-control" id="leaveReason" placeholder="사유를 입력하세요 (선택)"></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── 관리자 뷰: 휴가 승인 ── -->
+    <div id="adminLeaveView" style="display:none">
+      <div class="page-header">
+        <h2>휴가 관리</h2>
+        <p>직원 휴가 신청 승인·반려</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="pendingTab">
+          대기 중 신청
+          <span class="nav-badge pending-leave-badge" style="display:none; margin-left:4px">0</span>
+        </button>
+        <button class="tab-btn" data-tab="allTab">전체 이력</button>
+      </div>
+
+      <!-- 대기 중 -->
+      <div class="tab-panel active" id="pendingTab">
+        <div class="card">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>직원</th>
+                  <th>유형</th>
+                  <th>기간</th>
+                  <th>사유</th>
+                  <th>신청일</th>
+                  <th>상태</th>
+                  <th>처리</th>
+                </tr>
+              </thead>
+              <tbody id="pendingLeaveBody">
+                <tr><td colspan="7" class="empty-row">데이터를 불러오는 중...</td></tr>
+              </tbody>
+            </table>
           </div>
-          <button class="btn btn-primary w-full" type="submit">신청</button>
-        </form>
-      </div>
-
-      <!-- 내 신청 이력 -->
-      <div class="card">
-        <div class="card-title">내 휴가 신청 이력</div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>유형</th>
-                <th>기간</th>
-                <th>신청일</th>
-                <th>상태</th>
-              </tr>
-            </thead>
-            <tbody id="myLeaveBody">
-              <tr><td colspan="4" class="empty-row">데이터를 불러오는 중...</td></tr>
-            </tbody>
-          </table>
         </div>
       </div>
 
-    </div>
-  </div>
-
-  <!-- ── 관리자 뷰: 휴가 승인 ── -->
-  <div id="adminLeaveView" style="display:none">
-    <div class="page-title">휴가 관리</div>
-    <div class="page-subtitle">직원 휴가 신청 승인·반려</div>
-
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="pendingTab">
-        대기 중 신청
-        <span class="nav-badge pending-leave-badge" style="display:none; margin-left:4px">0</span>
-      </button>
-      <button class="tab-btn" data-tab="allTab">전체 이력</button>
-    </div>
-
-    <!-- 대기 중 -->
-    <div class="tab-panel active" id="pendingTab">
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>직원</th>
-                <th>유형</th>
-                <th>기간</th>
-                <th>사유</th>
-                <th>신청일</th>
-                <th>상태</th>
-                <th>처리</th>
-              </tr>
-            </thead>
-            <tbody id="pendingLeaveBody">
-              <tr><td colspan="7" class="empty-row">데이터를 불러오는 중...</td></tr>
-            </tbody>
-          </table>
+      <!-- 전체 이력 -->
+      <div class="tab-panel" id="allTab">
+        <div class="card">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>직원</th>
+                  <th>유형</th>
+                  <th>기간</th>
+                  <th>사유</th>
+                  <th>신청일</th>
+                  <th>상태</th>
+                  <th>처리일</th>
+                </tr>
+              </thead>
+              <tbody id="allLeaveBody">
+                <tr><td colspan="7" class="empty-row">데이터를 불러오는 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 전체 이력 -->
-    <div class="tab-panel" id="allTab">
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>직원</th>
-                <th>유형</th>
-                <th>기간</th>
-                <th>사유</th>
-                <th>신청일</th>
-                <th>상태</th>
-                <th>처리일</th>
-              </tr>
-            </thead>
-            <tbody id="allLeaveBody">
-              <tr><td colspan="7" class="empty-row">데이터를 불러오는 중...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</main>
+  </main>
+</div>
 
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
@@ -152,9 +158,7 @@
     const user = requireAuth();
     if (!user) return;
 
-    renderHeader();
-    renderNavLinks(user);
-    renderUserInfo();
+    renderSidebar(user);
 
     if (user.role === '관리자') {
       document.getElementById('employeeLeaveView').style.display = 'none';

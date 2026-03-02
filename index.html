@@ -3,59 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>로그인 — 출퇴근 관리</title>
+  <title>로그인 — bkl HR</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
 <div class="login-page">
-  <div class="login-card">
+  <div class="login-container">
 
     <div class="login-logo">
-      <div class="login-logo-icon" aria-hidden="true">🎨</div>
-      <div>
-        <div class="login-title">출퇴근 관리 시스템</div>
-        <div class="login-subtitle">장애예술인 인사관리</div>
-      </div>
+      <h1>bkl <span>HR</span></h1>
+      <p>장애예술인 인사관리 시스템</p>
     </div>
 
-    <div id="loginError" class="login-error" role="alert"></div>
+    <div class="login-card">
+      <h2>로그인</h2>
+      <div id="loginError" class="login-error"></div>
 
-    <form id="loginForm" novalidate>
-      <div class="form-group">
-        <label class="form-label" for="employeeId">직원 ID</label>
-        <input
-          class="form-control"
-          id="employeeId"
-          type="text"
-          placeholder="직원 ID를 입력하세요"
-          autocomplete="username"
-          required
-        />
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="password">비밀번호</label>
-        <input
-          class="form-control"
-          id="password"
-          type="password"
-          placeholder="비밀번호를 입력하세요"
-          autocomplete="current-password"
-          required
-        />
-      </div>
-      <button class="btn btn-primary w-full mt-8" id="loginBtn" type="submit">
-        로그인
-      </button>
-    </form>
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="employeeId">직원 ID</label>
+          <input id="employeeId" type="text" placeholder="직원 ID를 입력하세요"
+            autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="password">비밀번호</label>
+          <input id="password" type="password" placeholder="비밀번호를 입력하세요"
+            autocomplete="current-password" required />
+        </div>
+        <button class="btn btn-primary w-full" id="loginBtn" type="submit"
+          style="margin-top:8px; min-height:48px; font-size:15px;">
+          로그인
+        </button>
+      </form>
 
-    <p class="text-sm text-muted mt-16" style="text-align:center;">
-      계정 문제는 관리자에게 문의하세요.
-    </p>
+      <div class="login-footer">계정 문제는 관리자에게 문의하세요.</div>
+    </div>
+
   </div>
 </div>
 
-<!-- 로딩 -->
 <div id="globalLoader" role="status" aria-label="로딩 중">
   <div class="spinner"></div>
 </div>

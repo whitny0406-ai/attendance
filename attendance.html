@@ -3,99 +3,129 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>출퇴근 기록 — 출퇴근 관리</title>
+  <title>출퇴근 기록 — bkl HR</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-
-<header class="header" id="siteHeader"></header>
 
 <div id="globalLoader" role="status" aria-label="로딩 중">
   <div class="spinner"></div>
 </div>
 
-<main class="main">
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
 
-  <!-- ── 직원 뷰 ── -->
-  <div id="employeeView">
-    <div class="page-title">출퇴근 기록</div>
-    <div class="page-subtitle" id="empTodayDate"></div>
+  <main class="main-content">
 
-    <!-- 오늘 현황 카드 -->
-    <div class="today-card">
-      <div class="today-date" id="empDateDisplay"></div>
-      <div class="today-status-label" id="attendanceStatus">확인 중...</div>
-      <div class="today-time-info" id="todayInfo"></div>
-      <div class="schedule-info" id="scheduleDisplay"></div>
-    </div>
+    <!-- ── 직원 뷰 ── -->
+    <div id="employeeView">
+      <div class="page-header">
+        <h2>출퇴근 기록</h2>
+        <p id="empTodayDate"></p>
+      </div>
 
-    <!-- 출근/퇴근 버튼 (지체·뇌병변 장애 특화: 크고 명확한 버튼) -->
-    <div class="clock-btn-wrap">
-      <button class="btn clock-btn clock-btn-in" id="clockInBtn" type="button" disabled
-        aria-label="출근 기록">
-        🟢 출근
-      </button>
-      <button class="btn clock-btn clock-btn-out" id="clockOutBtn" type="button" disabled
-        aria-label="퇴근 기록">
-        🔴 퇴근
-      </button>
-    </div>
+      <!-- 오늘 현황 -->
+      <div class="today-status">
+        <div class="status-item">
+          <div class="status-label">오늘 날짜</div>
+          <div class="status-value" id="empDateDisplay">-</div>
+        </div>
+        <div class="status-item">
+          <div class="status-label">출근 상태</div>
+          <div class="status-value" id="attendanceStatus">확인 중...</div>
+        </div>
+        <div class="status-item">
+          <div class="status-label">출근 / 퇴근</div>
+          <div class="status-value" id="todayInfo">-</div>
+        </div>
+        <div class="status-item">
+          <div class="status-label">예정 근무</div>
+          <div class="status-value" id="scheduleDisplay">-</div>
+        </div>
+      </div>
 
-    <!-- 최근 출퇴근 이력 -->
-    <div class="card section">
-      <div class="card-title">최근 출퇴근 이력</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>날짜</th>
-              <th>출근</th>
-              <th>퇴근</th>
-              <th>상태</th>
-              <th>비고</th>
-            </tr>
-          </thead>
-          <tbody id="historyTableBody">
-            <tr><td colspan="5" class="empty-row">데이터를 불러오는 중...</td></tr>
-          </tbody>
-        </table>
+      <!-- 출근/퇴근 버튼 (지체·뇌병변 장애 특화: 크고 명확한 버튼) -->
+      <div class="attendance-actions">
+        <button class="btn-clock btn-clock-in" id="clockInBtn" type="button" disabled
+          aria-label="출근 기록">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          출근
+        </button>
+        <button class="btn-clock btn-clock-out" id="clockOutBtn" type="button" disabled
+          aria-label="퇴근 기록">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          퇴근
+        </button>
+      </div>
+
+      <!-- 최근 출퇴근 이력 -->
+      <div class="card">
+        <div class="card-title">최근 출퇴근 이력</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>날짜</th>
+                <th>출근</th>
+                <th>퇴근</th>
+                <th>상태</th>
+                <th>비고</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr><td colspan="5" class="empty-row">데이터를 불러오는 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ── 관리자 뷰 ── -->
-  <div id="adminView" style="display:none">
-    <div class="page-title">출퇴근 관리</div>
-    <div class="page-subtitle">직원 출퇴근 현황 확인 및 수동 입력</div>
-
-    <div class="card section">
-      <div class="filter-bar">
-        <label for="dateFilter" class="form-label" style="margin:0; white-space:nowrap;">날짜 선택</label>
-        <input class="form-control" id="dateFilter" type="date" style="max-width:180px" />
-        <button class="btn btn-outline btn-sm" onclick="loadAttendanceTable()">조회</button>
+    <!-- ── 관리자 뷰 ── -->
+    <div id="adminView" style="display:none">
+      <div class="page-header">
+        <h2>출퇴근 관리</h2>
+        <p>직원 출퇴근 현황 확인 및 수동 입력</p>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>이름</th>
-              <th>소속</th>
-              <th>예정 근무</th>
-              <th>출근</th>
-              <th>퇴근</th>
-              <th>상태</th>
-              <th>수정</th>
-            </tr>
-          </thead>
-          <tbody id="adminAttendanceBody">
-            <tr><td colspan="7" class="empty-row">날짜를 선택하세요.</td></tr>
-          </tbody>
-        </table>
+
+      <div class="card">
+        <div class="section-header">
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <label for="dateFilter" style="font-size:13px; font-weight:500; color:var(--gray-600); white-space:nowrap;">날짜 선택</label>
+            <input class="form-control" id="dateFilter" type="date" style="max-width:180px" />
+            <button class="btn btn-outline btn-sm" onclick="loadAttendanceTable()">조회</button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>소속</th>
+                <th>예정 근무</th>
+                <th>출근</th>
+                <th>퇴근</th>
+                <th>상태</th>
+                <th>수정</th>
+              </tr>
+            </thead>
+            <tbody id="adminAttendanceBody">
+              <tr><td colspan="7" class="empty-row">날짜를 선택하세요.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
 
-</main>
+  </main>
+</div>
 
 <!-- 수동 수정 모달 -->
 <div class="modal-overlay" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
@@ -120,9 +150,9 @@
         <label class="form-label" for="editNote">비고</label>
         <input class="form-control" id="editNote" type="text" placeholder="비고 내용 (선택)" />
       </div>
-      <div class="flex gap-12 mt-16">
-        <button type="button" class="btn btn-outline w-full" onclick="closeEditModal()">취소</button>
-        <button type="submit" class="btn btn-primary w-full">저장</button>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeEditModal()">취소</button>
+        <button type="submit" class="btn btn-primary">저장</button>
       </div>
     </form>
   </div>
@@ -138,8 +168,7 @@
     const user = requireAuth();
     if (!user) return;
 
-    renderHeader();
-    renderNavLinks(user);
+    renderSidebar(user);
 
     const now = new Date();
     const dateStr = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
