@@ -4,7 +4,8 @@
  */
 
 /**
- * Apps Script 웹앱에 POST 요청
+ * Apps Script 웹앱에 GET 요청 (CORS 우회)
+ * POST는 302 리디렉션 시 CORS 헤더 유실 → GET으로 URL 파라미터 전달
  * @param {string} action - 수행할 액션
  * @param {object} payload - 전달할 데이터
  */
@@ -13,11 +14,11 @@ async function callAppsScript(action, payload) {
     throw new Error('Apps Script URL이 설정되지 않았습니다. js/config.js를 수정하세요.');
   }
 
-  const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, payload }),
-  });
+  const url = new URL(CONFIG.APPS_SCRIPT_URL);
+  url.searchParams.set('action', action);
+  url.searchParams.set('payload', JSON.stringify(payload));
+
+  const res = await fetch(url.toString(), { redirect: 'follow' });
 
   if (!res.ok) throw new Error(`쓰기 요청 실패 (${res.status})`);
 
