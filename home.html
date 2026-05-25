@@ -12,12 +12,6 @@
   <div class="spinner"></div>
 </div>
 
-<!-- 이미지 라이트박스 -->
-<div class="lightbox-overlay" id="lightbox">
-  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
-  <img id="lightboxImg" src="" alt="이미지 확대" />
-</div>
-
 <div class="app-layout">
   <aside class="sidebar" id="sidebar"></aside>
 
@@ -177,19 +171,6 @@
   function closeNoticeModal() {
     document.getElementById('noticeModal').style.display = 'none';
   }
-
-  // 이미지 라이트박스
-  function openLightbox(src) {
-    document.getElementById('lightboxImg').src = src;
-    document.getElementById('lightbox').classList.add('open');
-  }
-  function closeLightbox() {
-    document.getElementById('lightbox').classList.remove('open');
-  }
-  document.getElementById('lightbox').addEventListener('click', function(e) {
-    if (e.target === this) closeLightbox();
-  });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
   // HTML 이스케이프
   function escapeHtml(str) {

@@ -12,12 +12,6 @@
   <div class="spinner"></div>
 </div>
 
-<!-- 이미지 라이트박스 -->
-<div class="lightbox-overlay" id="lightbox">
-  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
-  <img id="lightboxImg" src="" alt="이미지 확대" />
-</div>
-
 <div class="app-layout">
   <aside class="sidebar" id="sidebar"></aside>
 
@@ -100,43 +94,22 @@
       el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray-400);">업무일지가 없습니다.</div>';
       return;
     }
-    el.innerHTML = list.map(j => {
-      const imgHtml = j['이미지URL']
-        ? `<img src="${escapeHtml(j['이미지URL'])}" class="journal-list-image"
-              onclick="openLightbox('${escapeHtml(j['이미지URL'])}')"
-              onerror="this.style.display='none'" />`
-        : '';
-      return `
-        <div class="journal-list-item">
-          <div class="journal-list-header">
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              <span style="font-size:14px; font-weight:600; color:var(--gray-800);">
-                ${escapeHtml(j['이름'] || '-')}
-              </span>
-              <span class="badge badge-info" style="font-size:11px;">${escapeHtml(j['직원ID'] || '')}</span>
-              <span class="journal-list-date">📅 ${j['날짜'] || '-'}</span>
-            </div>
-            <div style="font-size:12px; color:var(--gray-400);">${formatDateTime(j['작성일시'])}</div>
+    el.innerHTML = list.map(j => `
+      <div class="journal-list-item">
+        <div class="journal-list-header">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span style="font-size:14px; font-weight:600; color:var(--gray-800);">
+              ${escapeHtml(j['이름'] || '-')}
+            </span>
+            <span class="badge badge-info" style="font-size:11px;">${escapeHtml(j['직원ID'] || '')}</span>
+            <span class="journal-list-date">📅 ${j['날짜'] || '-'}</span>
           </div>
-          <div class="journal-list-title">${escapeHtml(j['제목'] || '')}</div>
-          <div class="journal-list-content">${escapeHtml(j['내용'] || '')}</div>
-          ${imgHtml}
-        </div>`;
-    }).join('');
+          <div style="font-size:12px; color:var(--gray-400);">${formatDateTime(j['작성일시'])}</div>
+        </div>
+        <div class="journal-list-title">${escapeHtml(j['제목'] || '')}</div>
+        <div class="journal-list-content">${escapeHtml(j['내용'] || '')}</div>
+      </div>`).join('');
   }
-
-  // ── 라이트박스 ──
-  function openLightbox(src) {
-    document.getElementById('lightboxImg').src = src;
-    document.getElementById('lightbox').classList.add('open');
-  }
-  function closeLightbox() {
-    document.getElementById('lightbox').classList.remove('open');
-  }
-  document.getElementById('lightbox').addEventListener('click', function(e) {
-    if (e.target === this) closeLightbox();
-  });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
   function escapeHtml(str) {
     return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

@@ -118,32 +118,10 @@ async function changePassword(employeeId, newHash) {
 }
 
 // ─────────────────────────────────────────
-//  POST 방식 (이미지 등 대용량 데이터)
-// ─────────────────────────────────────────
-
-/**
- * Apps Script에 POST 요청 (이미지 포함 시 사용)
- * no-cors 모드: 응답 읽기 불가이지만 데이터 저장은 정상 작동
- * Content-Type을 text/plain으로 해야 Simple Request 조건 만족
- */
-async function callAppsScriptPost(action, payload) {
-  if (!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
-    throw new Error('Apps Script URL이 설정되지 않았습니다.');
-  }
-  await fetch(CONFIG.APPS_SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, payload }),
-  });
-  return { status: 'ok' };
-}
-
-// ─────────────────────────────────────────
 //  공지사항
 // ─────────────────────────────────────────
 
-/** 공지 등록 (이미지/파일 없을 때) */
+/** 공지 등록 */
 async function addNotice(data) {
   return callAppsScript('addNotice', {
     noticeId: generateId('NTC'),
@@ -151,34 +129,6 @@ async function addNotice(data) {
     createdAt: getNowDateTimeStr(),
     status: '활성',
   });
-}
-
-/**
- * 공지 등록 (이미지 또는 파일 첨부 포함)
- * imageBase64: 이미지 base64 (data:image/...;base64,...)
- * fileBase64:  첨부파일 base64
- * fileType:    파일 MIME 타입
- * fileName:    파일 이름
- */
-async function addNoticeWithMedia(data, imageBase64, imageType, fileBase64, fileType, fileName) {
-  const payload = {
-    noticeId: generateId('NTC'),
-    ...data,
-    createdAt: getNowDateTimeStr(),
-    status: '활성',
-    imageBase64: imageBase64 || '',
-    imageType:   imageType   || 'image/jpeg',
-    fileBase64:  fileBase64  || '',
-    fileType:    fileType    || '',
-    fileName:    fileName    || '',
-  };
-  // 이미지나 파일이 있으면 POST 방식
-  if (imageBase64 || fileBase64) {
-    return callAppsScriptPost('addNotice', payload);
-  }
-  // 둘 다 없으면 GET 방식 (기존)
-  const { imageBase64: _i, imageType: _it, fileBase64: _f, fileType: _ft, fileName: _fn, ...textPayload } = payload;
-  return callAppsScript('addNotice', textPayload);
 }
 
 /** 공지 수정 (내용 또는 상태 변경) */
@@ -195,27 +145,13 @@ async function deactivateNotice(noticeId) {
 //  업무일지
 // ─────────────────────────────────────────
 
-/**
- * 업무일지 등록
- * imageBase64: 이미지가 있으면 base64 문자열 (data:image/...;base64,... 형태)
- * imageType: 'image/jpeg' | 'image/png' 등
- */
-async function addWorkJournal(data, imageBase64 = null, imageType = 'image/jpeg') {
-  const payload = {
+/** 업무일지 등록 */
+async function addWorkJournal(data) {
+  return callAppsScript('addWorkJournal', {
     journalId: generateId('JNL'),
     ...data,
     createdAt: getNowDateTimeStr(),
-    imageBase64: imageBase64 || '',
-    imageType,
-  };
-  // 이미지가 있으면 POST 방식 (URL 길이 초과 방지)
-  if (imageBase64) {
-    return callAppsScriptPost('addWorkJournal', payload);
-  }
-  // 이미지 없으면 기존 GET 방식
-  // 이미지 필드 제거 후 전송
-  const { imageBase64: _, imageType: __, ...textPayload } = payload;
-  return callAppsScript('addWorkJournal', { ...textPayload, imageURL: '' });
+  });
 }
 
 /** 업무일지 삭제 */

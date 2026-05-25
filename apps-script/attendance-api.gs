@@ -313,35 +313,6 @@ function handleProcessLeave(p) {
 // ─────────────────────────────────────────
 
 function handleAddNotice(p) {
-  var imageURL   = '';
-  var fileURL    = '';
-
-  // 이미지 Drive 저장
-  if (p.imageBase64 && p.imageBase64.length > 0) {
-    try {
-      var imgData = p.imageBase64.indexOf(',') !== -1 ? p.imageBase64.split(',')[1] : p.imageBase64;
-      var imgMime = p.imageType || 'image/jpeg';
-      var imgExt  = imgMime.split('/')[1] || 'jpg';
-      var imgBlob = Utilities.newBlob(Utilities.base64Decode(imgData), imgMime, 'notice_' + p.noticeId + '.' + imgExt);
-      var imgFile = getOrCreateFolder('bkl HR 공지사항').createFile(imgBlob);
-      imgFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      imageURL = 'https://drive.google.com/uc?id=' + imgFile.getId();
-    } catch(e) { Logger.log('공지 이미지 저장 오류: ' + e.message); }
-  }
-
-  // 첨부파일 Drive 저장
-  if (p.fileBase64 && p.fileBase64.length > 0) {
-    try {
-      var fData = p.fileBase64.indexOf(',') !== -1 ? p.fileBase64.split(',')[1] : p.fileBase64;
-      var fMime = p.fileType || 'application/octet-stream';
-      var fName = p.fileName || ('attachment_' + p.noticeId);
-      var fBlob = Utilities.newBlob(Utilities.base64Decode(fData), fMime, fName);
-      var fFile = getOrCreateFolder('bkl HR 공지사항').createFile(fBlob);
-      fFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      fileURL = 'https://drive.google.com/uc?export=download&id=' + fFile.getId();
-    } catch(e) { Logger.log('공지 파일 저장 오류: ' + e.message); }
-  }
-
   appendRow(SHEET_NAMES.NOTICE, {
     '공지ID':     p.noticeId,
     '제목':       p.title,
@@ -349,9 +320,9 @@ function handleAddNotice(p) {
     '작성자':     p.author || '',
     '작성일시':   p.createdAt,
     '상태':       p.status || '활성',
-    '이미지URL':  imageURL,
-    '첨부파일URL': fileURL,
-    '첨부파일명':  p.fileName || '',
+    '이미지URL':  '',
+    '첨부파일URL': '',
+    '첨부파일명':  '',
   });
   return { message: '공지 등록 완료' };
 }
@@ -375,47 +346,17 @@ function handleUpdateNotice(p) {
 // ─────────────────────────────────────────
 
 function handleAddWorkJournal(p) {
-  var imageURL = '';
-
-  // 이미지가 있으면 Google Drive에 저장
-  if (p.imageBase64 && p.imageBase64.length > 0) {
-    try {
-      // data:image/jpeg;base64,... 형태에서 실제 base64 부분만 추출
-      var base64Data = p.imageBase64.indexOf(',') !== -1
-        ? p.imageBase64.split(',')[1]
-        : p.imageBase64;
-
-      var mimeType = p.imageType || 'image/jpeg';
-      var ext      = mimeType.split('/')[1] || 'jpg';
-      var fileName = 'journal_' + p.journalId + '.' + ext;
-
-      var decoded = Utilities.base64Decode(base64Data);
-      var blob    = Utilities.newBlob(decoded, mimeType, fileName);
-
-      // Drive에 파일 저장 (bkl HR 업무일지 폴더)
-      var folder = getOrCreateFolder('bkl HR 업무일지');
-      var file   = folder.createFile(blob);
-
-      // 링크 공개 설정 (anyone with link can view)
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      imageURL = 'https://drive.google.com/uc?id=' + file.getId();
-    } catch (imgErr) {
-      Logger.log('이미지 저장 오류: ' + imgErr.message);
-      // 이미지 저장 실패해도 텍스트 데이터는 저장 계속
-    }
-  }
-
   appendRow(SHEET_NAMES.WORK_JOURNAL, {
-    '일지ID':   p.journalId,
-    '직원ID':   p.employeeId,
-    '이름':     p.employeeName || '',
-    '날짜':     p.date,
-    '제목':     p.title,
-    '내용':     p.content,
-    '이미지URL': imageURL,
-    '작성일시': p.createdAt,
+    '일지ID':    p.journalId,
+    '직원ID':    p.employeeId,
+    '이름':      p.employeeName || '',
+    '날짜':      p.date,
+    '제목':      p.title,
+    '내용':      p.content,
+    '이미지URL': '',
+    '작성일시':  p.createdAt,
   });
-  return { message: '업무일지 등록 완료', imageURL: imageURL };
+  return { message: '업무일지 등록 완료' };
 }
 
 function handleDeleteWorkJournal(p) {
