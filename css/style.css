@@ -932,6 +932,332 @@ textarea.form-control { min-height: 100px; resize: vertical; }
   flex-wrap: wrap;
 }
 
+/* ===== NOTICE BANNER ===== */
+.notice-banner {
+  background: linear-gradient(90deg, #1e3a5f 0%, #2563eb 100%);
+  color: var(--white);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  animation: fadeUp .4s ease;
+}
+
+.notice-banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.notice-banner-icon {
+  display: flex;
+  align-items: center;
+  color: var(--blue-300);
+  flex-shrink: 0;
+}
+
+.notice-banner-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue-200);
+  flex-shrink: 0;
+}
+
+.notice-banner-text {
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-banner-link {
+  font-size: 12px;
+  color: var(--blue-200);
+  text-decoration: underline;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.notice-banner-link:hover { color: var(--white); }
+
+.notice-banner-hide {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: rgba(255,255,255,.7);
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.notice-banner-hide input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--blue-400);
+}
+
+.notice-banner-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.6);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: var(--transition);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.notice-banner-close:hover {
+  color: var(--white);
+  background: rgba(255,255,255,.1);
+}
+
+/* ===== NOTICE LIST ===== */
+.notice-item {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.notice-item:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--blue-300);
+}
+
+.notice-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.notice-item-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-800);
+  flex: 1;
+}
+
+.notice-item-meta {
+  font-size: 12px;
+  color: var(--gray-400);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.notice-item-content {
+  font-size: 14px;
+  color: var(--gray-600);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.notice-detail-content {
+  font-size: 15px;
+  color: var(--gray-700);
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+/* ===== WORK JOURNAL ===== */
+.journal-form-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+.image-upload-area {
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-md);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--gray-50);
+  position: relative;
+}
+
+.image-upload-area:hover {
+  border-color: var(--blue-400);
+  background: var(--blue-50);
+}
+
+.image-upload-area.drag-over {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+}
+
+.image-upload-icon {
+  color: var(--gray-400);
+  margin-bottom: 10px;
+}
+
+.image-upload-text {
+  font-size: 14px;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+}
+
+.image-upload-hint {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+.image-upload-area input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.image-preview-wrap {
+  position: relative;
+  display: inline-block;
+  margin-top: 12px;
+}
+
+.image-preview-wrap img {
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+  display: block;
+}
+
+.image-preview-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: var(--danger);
+  color: var(--white);
+  border: none;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.journal-list-item {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  transition: var(--transition);
+}
+
+.journal-list-item:hover { box-shadow: var(--shadow-sm); }
+
+.journal-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.journal-list-date {
+  font-size: 13px;
+  color: var(--gray-500);
+  font-weight: 500;
+}
+
+.journal-list-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 6px;
+}
+
+.journal-list-content {
+  font-size: 14px;
+  color: var(--gray-600);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.journal-list-image {
+  margin-top: 12px;
+  border-radius: var(--radius-md);
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  display: block;
+  cursor: pointer;
+}
+
+.journal-date-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+/* ===== IMAGE LIGHTBOX ===== */
+.lightbox-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  z-index: 5000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.lightbox-overlay.open {
+  display: flex;
+}
+
+.lightbox-overlay img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255,255,255,.15);
+  border: none;
+  color: var(--white);
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .sidebar { width: 0; padding: 0; overflow: hidden; }

@@ -94,3 +94,61 @@ async function fetchPendingLeaves() {
   const all = await fetchLeaveRequests();
   return all.filter(r => r['상태'] === '대기');
 }
+
+// ─────────────────────────────────────────
+//  공지사항
+// ─────────────────────────────────────────
+
+/** 전체 공지사항 조회 */
+async function fetchNotices() {
+  return await fetchSheetData(CONFIG.SHEETS.NOTICE);
+}
+
+/** 활성 공지사항 조회 (최신순) */
+async function fetchActiveNotices() {
+  const all = await fetchNotices();
+  return all
+    .filter(r => r['상태'] === '활성')
+    .sort((a, b) => (b['작성일시'] > a['작성일시'] ? 1 : -1));
+}
+
+/** 공지사항 ID로 단건 조회 */
+async function fetchNoticeById(noticeId) {
+  const all = await fetchNotices();
+  return all.find(r => r['공지ID'] === noticeId) || null;
+}
+
+// ─────────────────────────────────────────
+//  업무일지
+// ─────────────────────────────────────────
+
+/** 전체 업무일지 조회 */
+async function fetchWorkJournals() {
+  return await fetchSheetData(CONFIG.SHEETS.WORK_JOURNAL);
+}
+
+/** 특정 직원의 업무일지 조회 (최신순) */
+async function fetchWorkJournalsByEmployee(employeeId) {
+  const all = await fetchWorkJournals();
+  return all
+    .filter(r => r['직원ID'] === employeeId)
+    .sort((a, b) => (b['날짜'] > a['날짜'] ? 1 : -1));
+}
+
+/** 특정 날짜의 업무일지 조회 */
+async function fetchWorkJournalsByDate(dateStr) {
+  const all = await fetchWorkJournals();
+  return all.filter(r => r['날짜'] === dateStr);
+}
+
+/** 특정 직원의 특정 날짜 업무일지 조회 */
+async function fetchWorkJournalByEmployeeDate(employeeId, dateStr) {
+  const all = await fetchWorkJournals();
+  return all.filter(r => r['직원ID'] === employeeId && r['날짜'] === dateStr);
+}
+
+/** 관리자용: 전체 직원 업무일지 조회 (날짜순) */
+async function fetchAllWorkJournals() {
+  const all = await fetchWorkJournals();
+  return all.sort((a, b) => (b['날짜'] > a['날짜'] ? 1 : -1));
+}

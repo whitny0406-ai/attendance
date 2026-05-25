@@ -85,6 +85,6 @@ function redirectByRole(user) {
   if (user.role === '관리자') {
     window.location.href = 'admin-dashboard.html';
   } else {
-    window.location.href = 'my-page.html';
+    window.location.href = 'home.html';
   }
 }

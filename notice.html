@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공지 관리 — bkl HR</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="globalLoader" role="status" aria-label="로딩 중">
+  <div class="spinner"></div>
+</div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h2>공지 관리</h2>
+      <p>공지사항을 등록하고 관리합니다.</p>
+    </div>
+
+    <!-- 공지 등록 폼 -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+        </svg>
+        새 공지 등록
+      </div>
+
+      <form id="noticeForm" onsubmit="submitNotice(event)">
+        <div class="form-group">
+          <label class="form-label" for="noticeTitle">제목 <span style="color:var(--danger)">*</span></label>
+          <input class="form-control" id="noticeTitle" type="text" placeholder="공지 제목을 입력하세요" required maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="noticeContent">내용 <span style="color:var(--danger)">*</span></label>
+          <textarea class="form-control" id="noticeContent" placeholder="공지 내용을 입력하세요" required style="min-height:140px;" maxlength="2000"></textarea>
+        </div>
+        <div id="noticeFormError" class="form-error"></div>
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+          <button type="button" class="btn btn-outline" onclick="resetNoticeForm()">초기화</button>
+          <button type="submit" class="btn btn-primary" id="noticeSubmitBtn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12l7 7 7-7"/>
+            </svg>
+            공지 등록
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 공지 목록 -->
+    <div class="card">
+      <div class="section-header">
+        <div class="card-title">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="1" ry="1"/>
+          </svg>
+          공지 목록
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadNotices()">새로고침</button>
+      </div>
+
+      <!-- 탭: 활성/전체 -->
+      <div class="tabs" style="margin-bottom:16px;">
+        <button class="tab-btn active" data-tab="tabActive" onclick="switchTab('tabActive', this)">활성 공지</button>
+        <button class="tab-btn" data-tab="tabAll"    onclick="switchTab('tabAll', this)">전체 공지</button>
+      </div>
+
+      <div id="tabActive">
+        <div id="activeNoticeList">
+          <div class="empty-row">불러오는 중...</div>
+        </div>
+      </div>
+      <div id="tabAll" style="display:none;">
+        <div id="allNoticeList">
+          <div class="empty-row">불러오는 중...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 공지 수정 모달 -->
+<div class="modal-overlay" id="editNoticeModal" role="dialog" aria-modal="true">
+  <div class="modal-box" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title">공지 수정</div>
+      <button class="modal-close" onclick="closeEditModal()" aria-label="닫기">✕</button>
+    </div>
+    <form id="editNoticeForm" onsubmit="submitEditNotice(event)">
+      <input type="hidden" id="editNoticeId" />
+      <div class="form-group">
+        <label class="form-label" for="editNoticeTitle">제목</label>
+        <input class="form-control" id="editNoticeTitle" type="text" required maxlength="100" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="editNoticeContent">내용</label>
+        <textarea class="form-control" id="editNoticeContent" required style="min-height:140px;" maxlength="2000"></textarea>
+      </div>
+      <div id="editNoticeError" class="form-error"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeEditModal()">취소</button>
+        <button type="submit" class="btn btn-primary">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/gsheet-api.js"></script>
+<script src="js/gsheet-write.js"></script>
+<script>
+  let allNoticesCache = [];
+
+  // ── 탭 전환 ──
+  function switchTab(tabId, btn) {
+    document.getElementById('tabActive').style.display = tabId === 'tabActive' ? 'block' : 'none';
+    document.getElementById('tabAll').style.display    = tabId === 'tabAll'    ? 'block' : 'none';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ── 공지 목록 로드 ──
+  async function loadNotices() {
+    setLoading(true);
+    try {
+      allNoticesCache = await fetchNotices();
+      allNoticesCache.sort((a, b) => (b['작성일시'] > a['작성일시'] ? 1 : -1));
+
+      const active = allNoticesCache.filter(n => n['상태'] === '활성');
+      renderNoticeTable(active, 'activeNoticeList', true);
+      renderNoticeTable(allNoticesCache, 'allNoticeList', true);
+    } catch (err) {
+      showApiError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderNoticeTable(list, containerId, isAdmin) {
+    const el = document.getElementById(containerId);
+    if (!list || list.length === 0) {
+      el.innerHTML = '<div style="padding:32px; text-align:center; color:var(--gray-400);">등록된 공지사항이 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = list.map(n => `
+      <div class="notice-item" style="cursor:default;">
+        <div class="notice-item-header">
+          <div class="notice-item-title">${escapeHtml(n['제목'] || '')}</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge ${n['상태'] === '활성' ? 'badge-success' : 'badge-gray'}">${n['상태'] || '-'}</span>
+            <span class="notice-item-meta">${formatDateTime(n['작성일시'])}</span>
+          </div>
+        </div>
+        <div class="notice-item-content">${escapeHtml(n['내용'] || '')}</div>
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="openEditModal(${JSON.stringify(n).replace(/"/g, '&quot;')})">수정</button>
+          ${n['상태'] === '활성'
+            ? `<button class="btn btn-sm" style="background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;" onclick="toggleStatus('${n['공지ID']}', '비활성')">비활성화</button>`
+            : `<button class="btn btn-sm btn-success" onclick="toggleStatus('${n['공지ID']}', '활성')">활성화</button>`
+          }
+          <button class="btn btn-danger btn-sm" onclick="deleteNoticeConfirm('${n['공지ID']}')">삭제</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── 공지 등록 ──
+  async function submitNotice(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('noticeFormError');
+    errEl.textContent = '';
+    const btn = document.getElementById('noticeSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
+
+    try {
+      const user = getUser();
+      const title   = document.getElementById('noticeTitle').value.trim();
+      const content = document.getElementById('noticeContent').value.trim();
+
+      if (!title || !content) {
+        errEl.textContent = '제목과 내용을 모두 입력하세요.';
+        return;
+      }
+
+      await addNotice({ title, content, author: user.name });
+      showToast('공지가 등록되었습니다.');
+      resetNoticeForm();
+
+      // 1.5초 후 목록 새로고침 (Apps Script 처리 시간 대기)
+      setTimeout(loadNotices, 1500);
+    } catch (err) {
+      errEl.textContent = err.message || '등록 실패';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg> 공지 등록';
+    }
+  }
+
+  function resetNoticeForm() {
+    document.getElementById('noticeForm').reset();
+    document.getElementById('noticeFormError').textContent = '';
+  }
+
+  // ── 수정 모달 ──
+  function openEditModal(notice) {
+    document.getElementById('editNoticeId').value      = notice['공지ID'];
+    document.getElementById('editNoticeTitle').value   = notice['제목'];
+    document.getElementById('editNoticeContent').value = notice['내용'];
+    document.getElementById('editNoticeError').textContent = '';
+    document.getElementById('editNoticeModal').style.display = 'flex';
+  }
+
+  function closeEditModal() {
+    document.getElementById('editNoticeModal').style.display = 'none';
+  }
+
+  async function submitEditNotice(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('editNoticeError');
+    errEl.textContent = '';
+    const submitBtn = e.target.querySelector('[type="submit"]');
+    submitBtn.disabled = true;
+
+    try {
+      const noticeId = document.getElementById('editNoticeId').value;
+      const title    = document.getElementById('editNoticeTitle').value.trim();
+      const content  = document.getElementById('editNoticeContent').value.trim();
+
+      if (!title || !content) {
+        errEl.textContent = '제목과 내용을 모두 입력하세요.';
+        return;
+      }
+
+      await updateNotice(noticeId, { title, content });
+      showToast('공지가 수정되었습니다.');
+      closeEditModal();
+      setTimeout(loadNotices, 1500);
+    } catch (err) {
+      errEl.textContent = err.message || '수정 실패';
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
+  // ── 상태 전환 ──
+  async function toggleStatus(noticeId, newStatus) {
+    const ok = await confirmDialog(`이 공지를 ${newStatus === '활성' ? '활성화' : '비활성화'}하시겠습니까?`);
+    if (!ok) return;
+    try {
+      await updateNotice(noticeId, { status: newStatus });
+      showToast(`공지가 ${newStatus === '활성' ? '활성화' : '비활성화'}되었습니다.`);
+      setTimeout(loadNotices, 1500);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── 삭제 ──
+  async function deleteNoticeConfirm(noticeId) {
+    const ok = await confirmDialog('이 공지를 삭제하시겠습니까?\n삭제된 공지는 복구할 수 없습니다.', '삭제', '취소');
+    if (!ok) return;
+    try {
+      await updateNotice(noticeId, { status: '삭제' });
+      showToast('공지가 삭제되었습니다.');
+      setTimeout(loadNotices, 1500);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── 유틸 ──
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function formatDateTime(dt) {
+    if (!dt) return '-';
+    const parts = dt.split(' ');
+    const datePart = parts[0] || '';
+    const timePart = parts[1] ? parts[1].substring(0, 5) : '';
+    const [, m, d] = datePart.split('-');
+    return `${Number(m)}월 ${Number(d)}일 ${timePart}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const user = requireAdmin();
+    if (!user) return;
+    renderSidebar(user);
+    loadNotices();
+  });
+</script>
+</body>
+</html>

@@ -116,3 +116,81 @@ async function processLeaveRequest(requestId, status) {
 async function changePassword(employeeId, newHash) {
   return callAppsScript('updateEmployee', { employeeId, passwordHash: newHash });
 }
+
+// ─────────────────────────────────────────
+//  POST 방식 (이미지 등 대용량 데이터)
+// ─────────────────────────────────────────
+
+/**
+ * Apps Script에 POST 요청 (이미지 포함 시 사용)
+ * no-cors 모드: 응답 읽기 불가이지만 데이터 저장은 정상 작동
+ * Content-Type을 text/plain으로 해야 Simple Request 조건 만족
+ */
+async function callAppsScriptPost(action, payload) {
+  if (!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_WEB_APP_URL') {
+    throw new Error('Apps Script URL이 설정되지 않았습니다.');
+  }
+  await fetch(CONFIG.APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, payload }),
+  });
+  return { status: 'ok' };
+}
+
+// ─────────────────────────────────────────
+//  공지사항
+// ─────────────────────────────────────────
+
+/** 공지 등록 */
+async function addNotice(data) {
+  return callAppsScript('addNotice', {
+    noticeId: generateId('NTC'),
+    ...data,
+    createdAt: getNowDateTimeStr(),
+    status: '활성',
+  });
+}
+
+/** 공지 수정 (내용 또는 상태 변경) */
+async function updateNotice(noticeId, data) {
+  return callAppsScript('updateNotice', { noticeId, ...data });
+}
+
+/** 공지 비활성화 (삭제 대신) */
+async function deactivateNotice(noticeId) {
+  return callAppsScript('updateNotice', { noticeId, status: '비활성' });
+}
+
+// ─────────────────────────────────────────
+//  업무일지
+// ─────────────────────────────────────────
+
+/**
+ * 업무일지 등록
+ * imageBase64: 이미지가 있으면 base64 문자열 (data:image/...;base64,... 형태)
+ * imageType: 'image/jpeg' | 'image/png' 등
+ */
+async function addWorkJournal(data, imageBase64 = null, imageType = 'image/jpeg') {
+  const payload = {
+    journalId: generateId('JNL'),
+    ...data,
+    createdAt: getNowDateTimeStr(),
+    imageBase64: imageBase64 || '',
+    imageType,
+  };
+  // 이미지가 있으면 POST 방식 (URL 길이 초과 방지)
+  if (imageBase64) {
+    return callAppsScriptPost('addWorkJournal', payload);
+  }
+  // 이미지 없으면 기존 GET 방식
+  // 이미지 필드 제거 후 전송
+  const { imageBase64: _, imageType: __, ...textPayload } = payload;
+  return callAppsScript('addWorkJournal', { ...textPayload, imageURL: '' });
+}
+
+/** 업무일지 삭제 */
+async function deleteWorkJournal(journalId) {
+  return callAppsScript('deleteWorkJournal', { journalId });
+}

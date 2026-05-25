@@ -174,13 +174,16 @@ function renderSidebar(user) {
     { href: 'attendance.html',      label: '출퇴근 기록', icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' },
     { href: 'employee-list.html',   label: '직원 관리',   icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' },
     { href: 'schedule.html',        label: '스케줄 관리', icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>' },
+    { href: 'notice.html',          label: '공지 관리',   icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>' },
     { href: 'leave.html',           label: '휴가 관리',   icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>', badge: true },
   ];
 
   const employeeLinks = [
-    { href: 'my-page.html',    label: '내 정보',   icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
-    { href: 'attendance.html', label: '출퇴근',    icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' },
-    { href: 'leave.html',      label: '휴가 신청', icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>' },
+    { href: 'home.html',         label: '홈',        icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>' },
+    { href: 'attendance.html',   label: '출퇴근',    icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' },
+    { href: 'work-journal.html', label: '업무일지',  icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>' },
+    { href: 'leave.html',        label: '휴가 신청', icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>' },
+    { href: 'my-page.html',      label: '내 정보',   icon: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
   ];
 
   const links = user.role === '관리자' ? adminLinks : employeeLinks;
@@ -244,6 +247,75 @@ function renderNavLinks(user) {
 
 /** renderHeader는 사이드바 레이아웃에서 사용 안 함 (하위 호환) */
 function renderHeader() {}
+
+/**
+ * 공지 배너 초기화
+ * - 오늘 하루 그만 보기를 체크했으면 표시 안 함
+ * - 활성 공지가 있으면 배너 표시
+ * gsheet-api.js 로드 후 호출할 것
+ */
+async function initNoticeBanner() {
+  // 오늘 하루 숨기기 확인
+  const today = getTodayStr();
+  const hiddenDate = localStorage.getItem('notice_banner_hidden');
+  if (hiddenDate === today) return;
+
+  // 기존 배너 제거 (중복 방지)
+  const existing = document.getElementById('noticeBanner');
+  if (existing) existing.remove();
+
+  try {
+    const notices = await fetchActiveNotices();
+    if (!notices || notices.length === 0) return;
+    const latest = notices[0]; // 가장 최신 공지
+
+    const banner = document.createElement('div');
+    banner.id = 'noticeBanner';
+    banner.className = 'notice-banner';
+    banner.innerHTML = `
+      <div class="notice-banner-inner">
+        <span class="notice-banner-icon">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+        </span>
+        <span class="notice-banner-title">[공지]</span>
+        <span class="notice-banner-text">${latest['제목'] || ''}</span>
+        <a href="home.html" class="notice-banner-link">자세히 보기</a>
+        <label class="notice-banner-hide">
+          <input type="checkbox" id="noticeDontShow"> 오늘 하루 그만 보기
+        </label>
+        <button class="notice-banner-close" aria-label="닫기">✕</button>
+      </div>
+    `;
+
+    // "오늘 하루 그만 보기" 체크 시 localStorage 저장 + 배너 숨김
+    banner.querySelector('#noticeDontShow').addEventListener('change', function () {
+      if (this.checked) {
+        localStorage.setItem('notice_banner_hidden', today);
+        banner.style.display = 'none';
+      } else {
+        localStorage.removeItem('notice_banner_hidden');
+      }
+    });
+
+    // 닫기 버튼
+    banner.querySelector('.notice-banner-close').addEventListener('click', () => {
+      banner.style.display = 'none';
+    });
+
+    // main-content 최상단 또는 body 상단에 삽입
+    const main = document.querySelector('.main-content');
+    if (main) {
+      main.insertBefore(banner, main.firstChild);
+    } else {
+      document.body.insertBefore(banner, document.body.firstChild);
+    }
+  } catch (e) {
+    // 공지 로드 실패 시 조용히 무시
+  }
+}
 
 /** 탭 전환 초기화 */
 function initTabs(defaultTab) {

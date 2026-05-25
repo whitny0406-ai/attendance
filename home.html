@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>홈 — bkl HR</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="globalLoader" role="status" aria-label="로딩 중">
+  <div class="spinner"></div>
+</div>
+
+<!-- 이미지 라이트박스 -->
+<div class="lightbox-overlay" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="이미지 확대" />
+</div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h2>홈</h2>
+      <p id="todayDateLabel"></p>
+    </div>
+
+    <!-- 공지 배너는 utils.js의 initNoticeBanner()가 자동 삽입 -->
+
+    <!-- 공지사항 섹션 -->
+    <div class="card">
+      <div class="section-header">
+        <div class="card-title">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+          </svg>
+          공지사항
+        </div>
+      </div>
+      <div id="noticeList">
+        <div class="empty-row" style="padding:24px; text-align:center; color:var(--gray-400);">공지사항을 불러오는 중...</div>
+      </div>
+    </div>
+
+    <!-- 공지 상세 모달 -->
+    <div class="modal-overlay" id="noticeModal" role="dialog" aria-modal="true">
+      <div class="modal-box" style="max-width:560px">
+        <div class="modal-header">
+          <div class="modal-title" id="noticeModalTitle">공지사항</div>
+          <button class="modal-close" onclick="closeNoticeModal()" aria-label="닫기">✕</button>
+        </div>
+        <div style="margin-bottom:8px;">
+          <span id="noticeModalMeta" style="font-size:12px; color:var(--gray-400);"></span>
+        </div>
+        <div id="noticeModalContent" class="notice-detail-content" style="margin-top:16px;"></div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" onclick="closeNoticeModal()">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오늘 출퇴근 현황 -->
+    <div class="card">
+      <div class="section-header">
+        <div class="card-title">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          오늘 출퇴근 현황
+        </div>
+      </div>
+      <div class="today-status" id="todayStatus">
+        <div class="status-item">
+          <div class="status-label">출근 시간</div>
+          <div class="status-value pending" id="statusClockIn">-</div>
+        </div>
+        <div class="status-item">
+          <div class="status-label">퇴근 시간</div>
+          <div class="status-value pending" id="statusClockOut">-</div>
+        </div>
+        <div class="status-item">
+          <div class="status-label">상태</div>
+          <div class="status-value pending" id="statusState">-</div>
+        </div>
+      </div>
+      <div style="margin-top:4px;">
+        <a href="attendance.html" class="btn btn-outline btn-sm">출퇴근 하러 가기 →</a>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/gsheet-api.js"></script>
+<script src="js/gsheet-write.js"></script>
+<script>
+  let currentNotice = null;
+
+  async function loadHome() {
+    const user = requireAuth();
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const [notices, todayRec] = await Promise.all([
+        fetchActiveNotices(),
+        (async () => {
+          const all = await fetchAttendanceByDate(getTodayStr());
+          return all.find(r => r['직원ID'] === user.employeeId) || null;
+        })(),
+      ]);
+
+      // 공지 목록 렌더링
+      renderNoticeList(notices);
+
+      // 오늘 출퇴근 현황
+      renderTodayStatus(todayRec);
+
+    } catch (err) {
+      showApiError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderNoticeList(notices) {
+    const container = document.getElementById('noticeList');
+    if (!notices || notices.length === 0) {
+      container.innerHTML = '<div style="padding:32px; text-align:center; color:var(--gray-400);">등록된 공지사항이 없습니다.</div>';
+      return;
+    }
+    container.innerHTML = notices.map(n => `
+      <div class="notice-item" onclick="openNoticeModal(${JSON.stringify(n).replace(/"/g, '&quot;')})">
+        <div class="notice-item-header">
+          <div class="notice-item-title">${escapeHtml(n['제목'] || '')}</div>
+          <div class="notice-item-meta">${formatDateTime(n['작성일시'])}</div>
+        </div>
+        <div class="notice-item-content">${escapeHtml(n['내용'] || '')}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderTodayStatus(rec) {
+    const inEl    = document.getElementById('statusClockIn');
+    const outEl   = document.getElementById('statusClockOut');
+    const stateEl = document.getElementById('statusState');
+    if (!rec) {
+      inEl.textContent    = '-';
+      outEl.textContent   = '-';
+      stateEl.textContent = '미출근';
+      stateEl.className   = 'status-value';
+    } else {
+      inEl.textContent    = rec['출근시간'] || '-';
+      inEl.className      = 'status-value clocked-in';
+      outEl.textContent   = rec['퇴근시간'] || '-';
+      outEl.className     = rec['퇴근시간'] ? 'status-value clocked-out' : 'status-value pending';
+      stateEl.textContent = rec['상태'] === '완료' ? '퇴근 완료' : '미퇴근';
+      stateEl.className   = `status-value ${rec['상태'] === '완료' ? 'clocked-out' : 'clocked-in'}`;
+    }
+  }
+
+  function openNoticeModal(notice) {
+    currentNotice = notice;
+    document.getElementById('noticeModalTitle').textContent = notice['제목'] || '공지사항';
+    document.getElementById('noticeModalMeta').textContent =
+      `작성자: ${notice['작성자'] || '-'}  |  ${formatDateTime(notice['작성일시'])}`;
+    document.getElementById('noticeModalContent').textContent = notice['내용'] || '';
+    document.getElementById('noticeModal').style.display = 'flex';
+  }
+
+  function closeNoticeModal() {
+    document.getElementById('noticeModal').style.display = 'none';
+  }
+
+  // 이미지 라이트박스
+  function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+  document.getElementById('lightbox').addEventListener('click', function(e) {
+    if (e.target === this) closeLightbox();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  // HTML 이스케이프
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // 날짜+시간 포맷 (YYYY-MM-DD HH:MM:SS → M월 D일 HH:MM)
+  function formatDateTime(dt) {
+    if (!dt) return '-';
+    const parts = dt.split(' ');
+    const datePart = parts[0] || '';
+    const timePart = parts[1] ? parts[1].substring(0, 5) : '';
+    const [, m, d] = datePart.split('-');
+    return `${Number(m)}월 ${Number(d)}일 ${timePart}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const user = requireAuth();
+    if (!user) return;
+
+    // 관리자가 home.html에 직접 접근하면 대시보드로 보냄
+    if (user.role === '관리자') {
+      window.location.href = 'admin-dashboard.html';
+      return;
+    }
+
+    renderSidebar(user);
+
+    const now = new Date();
+    document.getElementById('todayDateLabel').textContent =
+      `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 (${['일','월','화','수','목','금','토'][now.getDay()]}요일)`;
+
+    loadHome();
+    initNoticeBanner();
+  });
+</script>
+</body>
+</html>

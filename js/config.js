@@ -19,5 +19,7 @@ const CONFIG = {
     EMPLOYEES: '직원정보',
     ATTENDANCE: '출퇴근기록',
     LEAVE: '휴가신청',
+    NOTICE: '공지사항',
+    WORK_JOURNAL: '업무일지',
   },
 };
