@@ -313,13 +313,45 @@ function handleProcessLeave(p) {
 // ─────────────────────────────────────────
 
 function handleAddNotice(p) {
+  var imageURL   = '';
+  var fileURL    = '';
+
+  // 이미지 Drive 저장
+  if (p.imageBase64 && p.imageBase64.length > 0) {
+    try {
+      var imgData = p.imageBase64.indexOf(',') !== -1 ? p.imageBase64.split(',')[1] : p.imageBase64;
+      var imgMime = p.imageType || 'image/jpeg';
+      var imgExt  = imgMime.split('/')[1] || 'jpg';
+      var imgBlob = Utilities.newBlob(Utilities.base64Decode(imgData), imgMime, 'notice_' + p.noticeId + '.' + imgExt);
+      var imgFile = getOrCreateFolder('bkl HR 공지사항').createFile(imgBlob);
+      imgFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      imageURL = 'https://drive.google.com/uc?id=' + imgFile.getId();
+    } catch(e) { Logger.log('공지 이미지 저장 오류: ' + e.message); }
+  }
+
+  // 첨부파일 Drive 저장
+  if (p.fileBase64 && p.fileBase64.length > 0) {
+    try {
+      var fData = p.fileBase64.indexOf(',') !== -1 ? p.fileBase64.split(',')[1] : p.fileBase64;
+      var fMime = p.fileType || 'application/octet-stream';
+      var fName = p.fileName || ('attachment_' + p.noticeId);
+      var fBlob = Utilities.newBlob(Utilities.base64Decode(fData), fMime, fName);
+      var fFile = getOrCreateFolder('bkl HR 공지사항').createFile(fBlob);
+      fFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      fileURL = 'https://drive.google.com/uc?export=download&id=' + fFile.getId();
+    } catch(e) { Logger.log('공지 파일 저장 오류: ' + e.message); }
+  }
+
   appendRow(SHEET_NAMES.NOTICE, {
-    '공지ID':   p.noticeId,
-    '제목':     p.title,
-    '내용':     p.content,
-    '작성자':   p.author || '',
-    '작성일시': p.createdAt,
-    '상태':     p.status || '활성',
+    '공지ID':     p.noticeId,
+    '제목':       p.title,
+    '내용':       p.content,
+    '작성자':     p.author || '',
+    '작성일시':   p.createdAt,
+    '상태':       p.status || '활성',
+    '이미지URL':  imageURL,
+    '첨부파일URL': fileURL,
+    '첨부파일명':  p.fileName || '',
   });
   return { message: '공지 등록 완료' };
 }
@@ -465,7 +497,7 @@ function initializeSheets() {
       '사유', '신청일시', '상태', '처리일시'
     ],
     [SHEET_NAMES.NOTICE]: [
-      '공지ID', '제목', '내용', '작성자', '작성일시', '상태'
+      '공지ID', '제목', '내용', '작성자', '작성일시', '상태', '이미지URL', '첨부파일URL', '첨부파일명'
     ],
     [SHEET_NAMES.WORK_JOURNAL]: [
       '일지ID', '직원ID', '이름', '날짜', '제목', '내용', '이미지URL', '작성일시'

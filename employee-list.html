@@ -160,7 +160,7 @@
       const statusClass = isRetired ? 'badge-danger' : 'badge-success';
       return `<tr style="${isRetired ? 'opacity:0.6' : ''}">
         <td class="text-sm text-muted">${e['직원ID']}</td>
-        <td class="font-bold">${e['이름']}</td>
+        <td class="font-bold" style="white-space:nowrap; min-width:72px;">${e['이름']}</td>
         <td>${e['소속'] || '-'}</td>
         <td>${e['직종'] || '-'}</td>
         <td>${e['연락처'] || '-'}</td>

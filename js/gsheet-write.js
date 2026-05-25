@@ -143,7 +143,7 @@ async function callAppsScriptPost(action, payload) {
 //  공지사항
 // ─────────────────────────────────────────
 
-/** 공지 등록 */
+/** 공지 등록 (이미지/파일 없을 때) */
 async function addNotice(data) {
   return callAppsScript('addNotice', {
     noticeId: generateId('NTC'),
@@ -151,6 +151,34 @@ async function addNotice(data) {
     createdAt: getNowDateTimeStr(),
     status: '활성',
   });
+}
+
+/**
+ * 공지 등록 (이미지 또는 파일 첨부 포함)
+ * imageBase64: 이미지 base64 (data:image/...;base64,...)
+ * fileBase64:  첨부파일 base64
+ * fileType:    파일 MIME 타입
+ * fileName:    파일 이름
+ */
+async function addNoticeWithMedia(data, imageBase64, imageType, fileBase64, fileType, fileName) {
+  const payload = {
+    noticeId: generateId('NTC'),
+    ...data,
+    createdAt: getNowDateTimeStr(),
+    status: '활성',
+    imageBase64: imageBase64 || '',
+    imageType:   imageType   || 'image/jpeg',
+    fileBase64:  fileBase64  || '',
+    fileType:    fileType    || '',
+    fileName:    fileName    || '',
+  };
+  // 이미지나 파일이 있으면 POST 방식
+  if (imageBase64 || fileBase64) {
+    return callAppsScriptPost('addNotice', payload);
+  }
+  // 둘 다 없으면 GET 방식 (기존)
+  const { imageBase64: _i, imageType: _it, fileBase64: _f, fileType: _ft, fileName: _fn, ...textPayload } = payload;
+  return callAppsScript('addNotice', textPayload);
 }
 
 /** 공지 수정 (내용 또는 상태 변경) */

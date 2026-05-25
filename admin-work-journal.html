@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>업무일지 현황 — bkl HR</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="globalLoader" role="status" aria-label="로딩 중">
+  <div class="spinner"></div>
+</div>
+
+<!-- 이미지 라이트박스 -->
+<div class="lightbox-overlay" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="이미지 확대" />
+</div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h2>업무일지 현황</h2>
+      <p>전체 직원의 업무일지를 확인합니다.</p>
+    </div>
+
+    <div class="card">
+      <!-- 필터 -->
+      <div class="admin-filter" style="margin-bottom:20px;">
+        <input type="text" id="filterName" class="form-control"
+          placeholder="이름 검색" oninput="applyFilter()"
+          style="max-width:160px;" />
+        <input type="date" id="filterDateFrom" class="form-control"
+          onchange="applyFilter()" style="max-width:160px;" />
+        <span style="color:var(--gray-400); font-size:13px;">~</span>
+        <input type="date" id="filterDateTo" class="form-control"
+          onchange="applyFilter()" style="max-width:160px;" />
+        <button class="btn btn-outline btn-sm" onclick="clearFilter()">필터 초기화</button>
+        <button class="btn btn-outline btn-sm" onclick="loadJournals()">새로고침</button>
+        <span id="filterCount" style="font-size:13px; color:var(--gray-500); margin-left:4px;"></span>
+      </div>
+
+      <!-- 일지 목록 -->
+      <div id="journalListAdmin">
+        <div class="empty-row">데이터를 불러오는 중...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/gsheet-api.js"></script>
+<script src="js/gsheet-write.js"></script>
+<script>
+  let allJournals = [];
+
+  async function loadJournals() {
+    setLoading(true);
+    try {
+      allJournals = await fetchAllWorkJournals();
+      applyFilter();
+    } catch (err) {
+      showApiError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function applyFilter() {
+    const name     = document.getElementById('filterName').value.trim().toLowerCase();
+    const dateFrom = document.getElementById('filterDateFrom').value;
+    const dateTo   = document.getElementById('filterDateTo').value;
+
+    const filtered = allJournals.filter(j => {
+      const matchName = !name || (j['이름'] || '').toLowerCase().includes(name);
+      const matchFrom = !dateFrom || j['날짜'] >= dateFrom;
+      const matchTo   = !dateTo   || j['날짜'] <= dateTo;
+      return matchName && matchFrom && matchTo;
+    });
+
+    renderJournals(filtered);
+    document.getElementById('filterCount').textContent =
+      filtered.length > 0 ? `총 ${filtered.length}건` : '';
+  }
+
+  function clearFilter() {
+    document.getElementById('filterName').value     = '';
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value   = '';
+    applyFilter();
+  }
+
+  function renderJournals(list) {
+    const el = document.getElementById('journalListAdmin');
+    if (!list || list.length === 0) {
+      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--gray-400);">업무일지가 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = list.map(j => {
+      const imgHtml = j['이미지URL']
+        ? `<img src="${escapeHtml(j['이미지URL'])}" class="journal-list-image"
+              onclick="openLightbox('${escapeHtml(j['이미지URL'])}')"
+              onerror="this.style.display='none'" />`
+        : '';
+      return `
+        <div class="journal-list-item">
+          <div class="journal-list-header">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <span style="font-size:14px; font-weight:600; color:var(--gray-800);">
+                ${escapeHtml(j['이름'] || '-')}
+              </span>
+              <span class="badge badge-info" style="font-size:11px;">${escapeHtml(j['직원ID'] || '')}</span>
+              <span class="journal-list-date">📅 ${j['날짜'] || '-'}</span>
+            </div>
+            <div style="font-size:12px; color:var(--gray-400);">${formatDateTime(j['작성일시'])}</div>
+          </div>
+          <div class="journal-list-title">${escapeHtml(j['제목'] || '')}</div>
+          <div class="journal-list-content">${escapeHtml(j['내용'] || '')}</div>
+          ${imgHtml}
+        </div>`;
+    }).join('');
+  }
+
+  // ── 라이트박스 ──
+  function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('open');
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+  document.getElementById('lightbox').addEventListener('click', function(e) {
+    if (e.target === this) closeLightbox();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  function escapeHtml(str) {
+    return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function formatDateTime(dt) {
+    if (!dt) return '-';
+    const [date='', time=''] = dt.split(' ');
+    const [,m,d] = date.split('-');
+    return `${Number(m)}월 ${Number(d)}일 ${time.substring(0,5)}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const user = requireAdmin();
+    if (!user) return;
+    renderSidebar(user);
+    loadJournals();
+  });
+</script>
+</body>
+</html>
