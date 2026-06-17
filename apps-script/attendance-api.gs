@@ -323,6 +323,7 @@ function handleAddNotice(p) {
     '이미지URL':  '',
     '첨부파일URL': '',
     '첨부파일명':  '',
+    '팝업노출':   'N',
   });
   return { message: '공지 등록 완료' };
 }
@@ -332,10 +333,21 @@ function handleUpdateNotice(p) {
   const rec  = rows.find(r => String(r['공지ID']) === String(p.noticeId));
   if (!rec) throw new Error('공지ID를 찾을 수 없습니다: ' + p.noticeId);
 
+  // 팝업으로 켤 경우, 동시에 하나만 표시되도록 다른 공지의 팝업은 모두 끈다
+  if (p.popupEnabled === 'Y') {
+    const sheet = getSheet(SHEET_NAMES.NOTICE);
+    rows.forEach(r => {
+      if (String(r['공지ID']) !== String(p.noticeId) && r['팝업노출'] === 'Y') {
+        updateRow(SHEET_NAMES.NOTICE, r._rowIndex, { '팝업노출': 'N' });
+      }
+    });
+  }
+
   const updates = {};
-  if (p.title   !== undefined) updates['제목'] = p.title;
-  if (p.content !== undefined) updates['내용'] = p.content;
-  if (p.status  !== undefined) updates['상태'] = p.status;
+  if (p.title        !== undefined) updates['제목']     = p.title;
+  if (p.content      !== undefined) updates['내용']     = p.content;
+  if (p.status       !== undefined) updates['상태']     = p.status;
+  if (p.popupEnabled !== undefined) updates['팝업노출'] = p.popupEnabled;
 
   updateRow(SHEET_NAMES.NOTICE, rec._rowIndex, updates);
   return { message: '공지 수정 완료' };
@@ -353,10 +365,10 @@ function handleAddWorkJournal(p) {
     '날짜':      p.date,
     '제목':      p.title,
     '내용':      p.content,
-    '이미지URL': '',
+    '이미지URL': p.imageURL || '',
     '작성일시':  p.createdAt,
   });
-  return { message: '업무일지 등록 완료' };
+  return { message: '업무일지 등록 완료', imageURL: p.imageURL || '' };
 }
 
 function handleDeleteWorkJournal(p) {
@@ -368,13 +380,6 @@ function handleDeleteWorkJournal(p) {
   const sheet = getSheet(SHEET_NAMES.WORK_JOURNAL);
   sheet.deleteRow(rec._rowIndex);
   return { message: '업무일지 삭제 완료' };
-}
-
-/** Google Drive 폴더 가져오기 (없으면 생성) */
-function getOrCreateFolder(folderName) {
-  var folders = DriveApp.getFoldersByName(folderName);
-  if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder(folderName);
 }
 
 // ─────────────────────────────────────────
@@ -438,7 +443,7 @@ function initializeSheets() {
       '사유', '신청일시', '상태', '처리일시'
     ],
     [SHEET_NAMES.NOTICE]: [
-      '공지ID', '제목', '내용', '작성자', '작성일시', '상태', '이미지URL', '첨부파일URL', '첨부파일명'
+      '공지ID', '제목', '내용', '작성자', '작성일시', '상태', '이미지URL', '첨부파일URL', '첨부파일명', '팝업노출'
     ],
     [SHEET_NAMES.WORK_JOURNAL]: [
       '일지ID', '직원ID', '이름', '날짜', '제목', '내용', '이미지URL', '작성일시'

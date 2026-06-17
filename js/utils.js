@@ -250,69 +250,61 @@ function renderNavLinks(user) {
 function renderHeader() {}
 
 /**
- * 공지 배너 초기화
- * - 오늘 하루 그만 보기를 체크했으면 표시 안 함
- * - 활성 공지가 있으면 배너 표시
+ * 공지 팝업 초기화
+ * - 관리자가 notice.html에서 "팝업으로 표시"를 켠 공지가 있을 때만 표시
+ * - "오늘 하루 닫기"를 체크했으면 같은 공지는 그날 다시 표시 안 함
  * gsheet-api.js 로드 후 호출할 것
  */
 async function initNoticeBanner() {
-  // 오늘 하루 숨기기 확인
-  const today = getTodayStr();
-  const hiddenDate = localStorage.getItem('notice_banner_hidden');
-  if (hiddenDate === today) return;
-
-  // 기존 배너 제거 (중복 방지)
-  const existing = document.getElementById('noticeBanner');
+  // 기존 팝업 제거 (중복 방지)
+  const existing = document.getElementById('noticePopupOverlay');
   if (existing) existing.remove();
 
   try {
     const notices = await fetchActiveNotices();
-    if (!notices || notices.length === 0) return;
-    const latest = notices[0]; // 가장 최신 공지
+    const popupNotice = notices.find(n => n['팝업노출'] === 'Y');
+    if (!popupNotice) return;
 
-    const banner = document.createElement('div');
-    banner.id = 'noticeBanner';
-    banner.className = 'notice-banner';
-    banner.innerHTML = `
-      <div class="notice-banner-inner">
-        <span class="notice-banner-icon">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 01-3.46 0"/>
-          </svg>
-        </span>
-        <span class="notice-banner-title">[공지]</span>
-        <span class="notice-banner-text">${latest['제목'] || ''}</span>
-        <a href="home.html" class="notice-banner-link">자세히 보기</a>
-        <label class="notice-banner-hide">
-          <input type="checkbox" id="noticeDontShow"> 오늘 하루 그만 보기
-        </label>
-        <button class="notice-banner-close" aria-label="닫기">✕</button>
+    const noticeId = popupNotice['공지ID'];
+    const today = getTodayStr();
+    const hiddenId   = localStorage.getItem('notice_popup_hidden_id');
+    const hiddenDate = localStorage.getItem('notice_popup_hidden_date');
+    if (hiddenId === noticeId && hiddenDate === today) return;
+
+    const esc = (s) => String(s || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'noticePopupOverlay';
+    overlay.className = 'notice-popup-overlay';
+    overlay.innerHTML = `
+      <div class="notice-popup-box">
+        <div class="notice-popup-body">
+          <div class="notice-popup-title">${esc(popupNotice['제목'])}</div>
+          <div class="notice-popup-content">${esc(popupNotice['내용'])}</div>
+        </div>
+        <div class="notice-popup-footer">
+          <label class="notice-popup-hide">
+            <input type="checkbox" id="noticePopupDontShow" /> 오늘 하루 닫기
+          </label>
+          <button class="notice-popup-close" aria-label="닫기">✕</button>
+        </div>
       </div>
     `;
 
-    // "오늘 하루 그만 보기" 체크 시 localStorage 저장 + 배너 숨김
-    banner.querySelector('#noticeDontShow').addEventListener('change', function () {
-      if (this.checked) {
-        localStorage.setItem('notice_banner_hidden', today);
-        banner.style.display = 'none';
-      } else {
-        localStorage.removeItem('notice_banner_hidden');
+    function closePopup() {
+      if (document.getElementById('noticePopupDontShow').checked) {
+        localStorage.setItem('notice_popup_hidden_id', noticeId);
+        localStorage.setItem('notice_popup_hidden_date', today);
       }
-    });
-
-    // 닫기 버튼
-    banner.querySelector('.notice-banner-close').addEventListener('click', () => {
-      banner.style.display = 'none';
-    });
-
-    // main-content 최상단 또는 body 상단에 삽입
-    const main = document.querySelector('.main-content');
-    if (main) {
-      main.insertBefore(banner, main.firstChild);
-    } else {
-      document.body.insertBefore(banner, document.body.firstChild);
+      overlay.remove();
     }
+
+    overlay.querySelector('.notice-popup-close').addEventListener('click', closePopup);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closePopup(); });
+
+    document.body.appendChild(overlay);
   } catch (e) {
     // 공지 로드 실패 시 조용히 무시
   }

@@ -172,6 +172,7 @@
         <div class="notice-item-header">
           <div class="notice-item-title">${escapeHtml(n['제목'] || '')}</div>
           <div style="display:flex;align-items:center;gap:8px;">
+            ${n['팝업노출']==='Y' ? `<span class="badge" style="background:#DBEAFE;color:#1D4ED8;">팝업 표시중</span>` : ''}
             <span class="badge ${n['상태']==='활성'?'badge-success':'badge-gray'}">${n['상태']||'-'}</span>
             <span class="notice-item-meta">${formatDateTime(n['작성일시'])}</span>
           </div>
@@ -182,6 +183,9 @@
           ${n['상태']==='활성'
             ? `<button class="btn btn-sm" style="background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;" onclick="toggleStatus('${n['공지ID']}','비활성')">비활성화</button>`
             : `<button class="btn btn-sm btn-success" onclick="toggleStatus('${n['공지ID']}','활성')">활성화</button>`}
+          ${n['팝업노출']==='Y'
+            ? `<button class="btn btn-sm" style="background:#DBEAFE;color:#1D4ED8;border:1px solid #BFDBFE;" onclick="togglePopup('${n['공지ID']}', false)">팝업 내리기</button>`
+            : `<button class="btn btn-outline btn-sm" onclick="togglePopup('${n['공지ID']}', true)">팝업으로 띄우기</button>`}
           <button class="btn btn-danger btn-sm" onclick="deleteNoticeConfirm('${n['공지ID']}')">삭제</button>
         </div>
       </div>`).join('');
@@ -226,6 +230,15 @@
     if (!ok) return;
     try { await updateNotice(noticeId, { status: '삭제' }); showToast('삭제되었습니다.'); setTimeout(loadNotices, 1500); }
     catch (err) { showToast(err.message, 'error'); }
+  }
+
+  // ── 팝업 표시 ON/OFF (동시에 하나만 표시 — 서버에서 나머지는 자동으로 꺼짐) ──
+  async function togglePopup(noticeId, enable) {
+    try {
+      await updateNotice(noticeId, { popupEnabled: enable ? 'Y' : 'N' });
+      showToast(enable ? '팝업으로 표시됩니다.' : '팝업 표시가 해제되었습니다.');
+      setTimeout(loadNotices, 1000);
+    } catch (err) { showToast(err.message, 'error'); }
   }
 
   // ── 유틸 ──

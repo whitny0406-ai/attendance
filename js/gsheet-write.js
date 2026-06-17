@@ -142,15 +142,51 @@ async function deactivateNotice(noticeId) {
 }
 
 // ─────────────────────────────────────────
+//  이미지 업로드 (가비아 호스팅 서버, upload.php 경유)
+// ─────────────────────────────────────────
+
+/**
+ * upload.php에 이미지를 업로드하고 공개 URL을 반환합니다.
+ * @param {string} base64Data - data:image/...;base64,... 형태
+ * @param {string} prefix     - 파일명 접두사 (journal 등)
+ * @returns {Promise<string>} 업로드된 이미지의 공개 URL
+ */
+async function uploadImageToServer(base64Data, prefix = 'img') {
+  if (!CONFIG.IMAGE_UPLOAD_URL) {
+    throw new Error('IMAGE_UPLOAD_URL이 설정되지 않았습니다. js/config.js를 확인하세요.');
+  }
+
+  const res = await fetch(CONFIG.IMAGE_UPLOAD_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: base64Data, prefix }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.url) {
+    throw new Error(data.error || `이미지 업로드 실패 (HTTP ${res.status})`);
+  }
+  return data.url;
+}
+
+// ─────────────────────────────────────────
 //  업무일지
 // ─────────────────────────────────────────
 
-/** 업무일지 등록 */
-async function addWorkJournal(data) {
+/**
+ * 업무일지 등록
+ * 이미지가 있으면 서버(upload.php)에 먼저 업로드 후 URL을 함께 저장합니다.
+ */
+async function addWorkJournal(data, imageBase64 = null) {
+  let imageURL = '';
+  if (imageBase64) {
+    imageURL = await uploadImageToServer(imageBase64, 'journal');
+  }
   return callAppsScript('addWorkJournal', {
     journalId: generateId('JNL'),
     ...data,
     createdAt: getNowDateTimeStr(),
+    imageURL,
   });
 }
 

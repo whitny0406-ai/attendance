@@ -14,6 +14,10 @@ const CONFIG = {
   // Google Apps Script 웹앱 배포 후 발급된 URL (쓰기 전용)
   APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycby8iPBHuD2-MMLPSedLjtXN7gHpR1GS70CR-zJai0YgTknlu4wKJyjatXMvCOlhSTA/exec',
 
+  // 업무일지 이미지 업로드 처리 서버 (가비아 호스팅에 올린 upload.php 경로)
+  // 같은 서버에 호스팅되므로 보통 상대경로로 충분합니다.
+  IMAGE_UPLOAD_URL: 'upload.php',
+
   // 시트 탭 이름 (구글 시트의 탭 이름과 동일해야 함)
   SHEETS: {
     EMPLOYEES: '직원정보',
