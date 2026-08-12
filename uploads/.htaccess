@@ -1,4 +1,4 @@
-php_flag engine off
+Options -Indexes
 <FilesMatch "\.(php|phtml|php3|php4|php5|pl|py|jsp|asp|sh|cgi)$">
   Deny from all
 </FilesMatch>

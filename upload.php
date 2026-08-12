@@ -62,7 +62,12 @@ if (strlen($binary) > $maxBytes) {
 
 $uploadDir = __DIR__ . '/uploads/';
 if (!is_dir($uploadDir)) {
-  mkdir($uploadDir, 0755, true);
+  // 777 권한은 가비아 등 국내 호스팅의 보안 정책(suEXEC)에 의해 500 에러로 차단됨 → 755 사용
+  if (!mkdir($uploadDir, 0755, true)) {
+    http_response_code(500);
+    echo json_encode(['error' => 'uploads 폴더 생성에 실패했습니다. FTP로 uploads 폴더를 만들고 권한을 755로 설정하세요.']);
+    exit;
+  }
 }
 
 // 고유 파일명 생성 (충돌 방지 + 추측 불가)
@@ -74,9 +79,14 @@ if (file_put_contents($filePath, $binary) === false) {
   echo json_encode(['error' => '파일 저장에 실패했습니다. uploads 폴더 쓰기 권한을 확인하세요.']);
   exit;
 }
+chmod($filePath, 0644);
 
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+// 가비아 호스팅은 리버스 프록시를 사용하므로 $_SERVER['HTTPS']가 비어있을 수 있음
+$isHttps  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+            || (isset($_SERVER['HTTP_X_FORWARDED_SSL'])   && $_SERVER['HTTP_X_FORWARDED_SSL']   === 'on');
+$protocol = $isHttps ? 'https://' : 'http://';
 $host     = $_SERVER['HTTP_HOST'];
 $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['PHP_SELF'])), '/');
 
-echo json_encode(['url' => $protocol . $host . $basePath . '/uploads/' . $fileName]);
+echo json_encode(['url' => $protocol . $host . $basePath . '/serve.php?f=' . $fileName]);
